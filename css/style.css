@@ -1,0 +1,7 @@
+.custom-cursor {
+    position: absolute;
+    cursor: url("../img/cursor.png"), pointer;   
+    width: 6px;
+    height: 6px;
+
+}
