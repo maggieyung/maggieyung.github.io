@@ -143,6 +143,8 @@
             height: auto;
             pointer-events: none;
             transform-origin: center center;
+            -webkit-user-drag: none;
+            user-select: none;
         }
 
         /* mobile tweaks */
@@ -187,6 +189,12 @@
         }
         .custom-cursor:focus {
             cursor: url("img/cursorhover.png") 16 16, default;
+        }
+
+        /* prevent dragging */
+        .scattered-particle {
+            -webkit-user-drag: none;
+            user-select: none;
         }
     </style>
 
