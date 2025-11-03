@@ -5,7 +5,6 @@
         
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <title>Maggie Yung</title>
-        <link rel="stylesheet" href="css/style.css"/>
     </head>
 
     <style>
@@ -28,20 +27,19 @@
             width: 100vw;
             height: 100vh;
             z-index: 0;
-            display: block;
             opacity: 0.5; 
             pointer-events: none;
         }
 
         :root {
-            --box-w: min(700px, 90vw);
-            --avatar: 150px;
-            --p-pad: 16px 18px 14px;
-            --p-size: 15px;
-            --cont-size: 18px;
+            --box-w: min(900px, 90vw); 
+            --avatar: 200px;           
+            --p-pad: 20px 24px 18px;  
+            --p-size: 17px;            
+            --cont-size: 20px;          
         }
 
-        /* dialogue box container (image background via ::before) */
+        /* dialogue box container */
         .dialogue-box {
             position: fixed;
             bottom: 70px;
@@ -50,7 +48,6 @@
             width: var(--box-w);
             font-family: 'Courier New', monospace;
             display: flex;
-            align-items: stretch;
             z-index: 10; 
 
             /* opaque only */
@@ -71,7 +68,7 @@
             inset: 0;
             background: url("img/dialoguebox.png") no-repeat center / 100% 100%;
             opacity: 0.75;
-            z-index: -1;            /* image behind content */
+            z-index: -1;            /* image behind */
             pointer-events: none;
         }
 
@@ -80,7 +77,6 @@
             width: var(--avatar);
             flex-shrink: 0;
             overflow: hidden;
-            border-right: 0;
         }
 
 
@@ -110,7 +106,7 @@
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
-            cursor: url("img/cursorfull.png") 16 16, default;
+            cursor: url("img/cursor.png") 16 16, default;
         }
         @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} } 
         .dialogue-box.hidden { display: none; }
@@ -124,22 +120,29 @@
             width: 120vw;
             height: 120vh;
             background: url("img/stars.png") repeat;
-            background-size: 800px 800px; /* doubled from 400px to repeat half as often */
+            background-size: 800px 800px; 
             opacity: 0.4;
             z-index: 1;
             pointer-events: none;
         }
 
-        /* house layer */
-        #house-layer {
+        /* particle parallax layer */
+        #particle-layer {
             position: fixed;
-            bottom: 10%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 300px;
-            height: auto;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             z-index: 2;
             pointer-events: none;
+        }
+
+        /* individual scattered particles */
+        .scattered-particle {
+            position: absolute;
+            height: auto;
+            pointer-events: none;
+            transform-origin: center center;
         }
 
         /* mobile tweaks */
@@ -160,41 +163,30 @@
 
         /* global custom cursor */
         html, body, * {
-            cursor: url("img/cursorfull.png") 16 16, auto;
+            cursor: url("img/cursor.png") 16 16, auto;
         }
         /* click */
         html:active, body:active, *:active {
-            cursor: url("img/cursor2.png") 16 16, auto;
+            cursor: url("img/cursorclick.png") 16 16, auto;
         }
         
-        /* elements pointer behavior fallback */
-        a, button, [role="button"],
-        input[type="button"], input[type="submit"], input[type="reset"],
-        .clickable {
-            cursor: url("img/cursorfull.png") 16 16, pointer;
-        }
-        /* text inputs text fallback */
-        input[type="text"], input[type="search"], input[type="email"], input[type="password"], textarea {
-            cursor: url("img/cursorfull.png") 16 16, text;
-        }
-
-        /* hover/focus */
+        /* custom cursor */
         .custom-cursor {
             display: inline-block;
             user-select: none;
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
-            cursor: url("img/cursorfull.png") 16 16, default;
+            cursor: url("img/cursor.png") 16 16, default;
         }
         .custom-cursor:hover {
-            cursor: url("img/cursor.png") 16 16, default;
+            cursor: url("img/cursorhover.png") 16 16, default;
         }
         .custom-cursor:active {
-            cursor: url("img/cursor2.png") 16 16, default;
+            cursor: url("img/cursorclick.png") 16 16, default;
         }
         .custom-cursor:focus {
-            cursor: url("img/cursor.png") 16 16, default;
+            cursor: url("img/cursorhover.png") 16 16, default;
         }
     </style>
 
@@ -205,8 +197,8 @@
         <!-- parallax stars -->
         <div id="stars-layer" data-parallax="20"></div>
 
-        <!-- house layer -->
-        <img id="house-layer" src="img/house.png" alt="house" data-parallax="10" />
+        <!-- particle layer - container for random particles -->
+        <div id="particle-layer"></div>
 
         <!-- hover custom cursor -->
         <div class="custom-cursor" style="
@@ -224,7 +216,7 @@
         <!-- dialogue box -->
         <div class="dialogue-box" id="dialogue-box">
             <div class="dialogue-box__avatar">
-                <img src="img/me_profile.png" alt="Character avatar" />
+                <img src="img/char.png" alt="avatar" />
             </div>
             <div class="dialogue-box__content">
                 <p style="font-size: 1.1em;">hi i'm maggie! i work as a programmer. i also do illustration, visual development, and animation!</p>
@@ -235,6 +227,7 @@
         </div>
 
         <script src="js/backdrop.js"></script>
+        <script src="js/particle-scatter.js"></script>
         <script src="js/parallax.js"></script>
         <script src="js/main.js"></script>
     </body>
