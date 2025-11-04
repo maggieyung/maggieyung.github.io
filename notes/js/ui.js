@@ -122,6 +122,35 @@ export function initToolbar() {
             e.preventDefault();
         }
     });
+
+    // draggable toolbar
+    const toolbar = document.querySelector('.toolbar');
+    let isToolbarDragging = false;
+    let toolbarDragStartX, toolbarDragStartY, toolbarStartLeft, toolbarStartTop;
+
+    toolbar?.addEventListener('mousedown', (e) => {
+        const interactiveTags = ['BUTTON', 'INPUT', 'SELECT', 'LABEL', 'TEXTAREA'];
+        if (interactiveTags.includes(e.target.tagName)) return;
+        isToolbarDragging = true;
+        toolbarDragStartX = e.clientX;
+        toolbarDragStartY = e.clientY;
+        const rect = toolbar.getBoundingClientRect();
+        toolbarStartLeft = rect.left;
+        toolbarStartTop = rect.top;
+        toolbar.style.position = 'absolute';
+        toolbar.style.zIndex = 1000;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (isToolbarDragging) {
+            toolbar.style.left = (toolbarStartLeft + e.clientX - toolbarDragStartX) + 'px';
+            toolbar.style.top = (toolbarStartTop + e.clientY - toolbarDragStartY) + 'px';
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        isToolbarDragging = false;
+    });
 }
 
 function initCustomColorPicker() {

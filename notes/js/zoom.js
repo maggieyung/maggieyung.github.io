@@ -232,7 +232,9 @@ export function initZoom() {
 
     minimapClose?.addEventListener('click', (e) => {
         e.stopPropagation();
-        minimapContainer.style.display = 'none';
+        if (minimapContainer) {
+            minimapContainer.style.display = 'none';
+        }
     });
 
     // dragging minimap 
@@ -276,8 +278,38 @@ export function initZoom() {
     document.addEventListener('mousemove', onPanMove);
     document.addEventListener('mouseup', onPanEnd);
 
-    currentScale = state.zoom || 1;
-    updateTransform();
-    refreshMinimap();
+    // center and fit notes to viewport 
+    function fitAndCenterNotes() {
+        if (typeof state.zoom === 'number') {
+            currentScale = state.zoom;
+        } else {
+            const bounds = getContentBounds();
+            if (bounds) {
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                const notesWidth = bounds.maxX - bounds.minX;
+                const notesHeight = bounds.maxY - bounds.minY;
+                const margin = 80;
+                const scaleX = (vw - margin * 2) / notesWidth;
+                const scaleY = (vh - margin * 2) / notesHeight;
+                currentScale = Math.max(minScale, Math.min(maxScale, Math.min(scaleX, scaleY)));
+                currentX = vw / 2 - ((bounds.minX + notesWidth / 2) * currentScale);
+                currentY = vh / 2 - ((bounds.minY + notesHeight / 2) * currentScale);
+            } else {
+                currentScale = 1;
+            }
+        }
+        updateTransform();
+        refreshMinimap();
+    }
+
+    const wb = document.getElementById('whiteboard');
+    if (wb) {
+        const observer = new MutationObserver(() => {
+            fitAndCenterNotes();
+        });
+        observer.observe(wb, { childList: true, subtree: true });
+        fitAndCenterNotes();
+    }
     setInterval(refreshMinimap, 1000);
 }
