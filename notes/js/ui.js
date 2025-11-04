@@ -154,6 +154,81 @@ export function initToolbar() {
 }
 
 function initCustomColorPicker() {
+    // Color eyedropper preview logic
+    const eyeDropperColor = document.getElementById('eyeDropperColor');
+    function updateEyeDropperPreview(color) {
+        if (eyeDropperColor) eyeDropperColor.style.background = color || '#fff';
+    }
+    updateEyeDropperPreview(state.brushColor);
+    // Listen for brush color changes
+    window.addEventListener('brushColorChange', (e) => {
+        updateEyeDropperPreview(e.detail);
+        // Update main menu color preview
+        if (typeof e.detail === 'string') {
+            const hex = e.detail;
+            if (colorPreview) colorPreview.style.backgroundColor = hex;
+            // Convert hex to HSL
+            function hexToHSL(H) {
+                let r = 0, g = 0, b = 0;
+                if (H.length === 4) {
+                    r = "0x" + H[1] + H[1];
+                    g = "0x" + H[2] + H[2];
+                    b = "0x" + H[3] + H[3];
+                } else if (H.length === 7) {
+                    r = "0x" + H[1] + H[2];
+                    g = "0x" + H[3] + H[4];
+                    b = "0x" + H[5] + H[6];
+                }
+                r = +r; g = +g; b = +b;
+                r /= 255; g /= 255; b /= 255;
+                const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+                if (max === min) {
+                    h = s = 0;
+                } else {
+                    const d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    switch (max) {
+                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                        case g: h = (b - r) / d + 2; break;
+                        case b: h = (r - g) / d + 4; break;
+                    }
+                    h /= 6;
+                }
+                return {
+                    h: Math.round(h * 360),
+                    s: Math.round(s * 100),
+                    l: Math.round(l * 100)
+                };
+            }
+            const hsl = hexToHSL(hex);
+            if (!isNaN(hsl.h) && !isNaN(hsl.s) && !isNaN(hsl.l)) {
+                currentHue = hsl.h;
+                currentSaturation = hsl.s;
+                currentLightness = hsl.l;
+                drawColorPicker(currentHue);
+                // Update square indicator position
+                const halfSquare = squareSize / 2;
+                updateSquareIndicator(centerX + halfSquare * (currentSaturation / 100), centerY + halfSquare * (1 - currentLightness / 100));
+                updateRingIndicator();
+            }
+        }
+    });
+    // Color eyedropper button logic
+    const colorEyeDropperBtn = document.getElementById('colorEyeDropperBtn');
+    if (colorEyeDropperBtn) {
+        colorEyeDropperBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            state.drawingMode = 'eyeDropper';
+            document.body.style.cursor = "url('../img/cursormini.png'), pointer";
+            colorEyeDropperBtn.style.opacity = '0.4';
+        });
+        // Listen for eyedropper completion to restore opacity
+        window.addEventListener('brushColorChange', () => {
+            // Always restore to full opacity when a color is picked
+            colorEyeDropperBtn.style.opacity = '';
+        });
+    }
     const colorSelector = document.getElementById('colorSelector');
     const colorPreview = document.getElementById('colorPreview');
     const colorPickerPopup = document.getElementById('colorPickerPopup');

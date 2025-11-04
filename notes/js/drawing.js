@@ -62,13 +62,43 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
         };
         document.addEventListener('keydown', handleUndoRedoDuringStroke);
 
+        // eyedropper preview circle 
+        const eyedropperPreview = document.getElementById('eyedropperPreviewCircle');
+        function showEyedropperPreview(x, y, color) {
+            if (!eyedropperPreview) return;
+            // offset preview settings
+            const offsetX = 20;
+            const offsetY = -36;
+            eyedropperPreview.style.left = (x + offsetX) + 'px';
+            eyedropperPreview.style.top = (y + offsetY) + 'px';
+            eyedropperPreview.style.background = color;
+            eyedropperPreview.style.display = 'block';
+        }
+        function hideEyedropperPreview() {
+            if (!eyedropperPreview) return;
+            eyedropperPreview.style.display = 'none';
+        }
+
         const start = (ev) => {
+            if (state.drawingMode === 'eyeDropper') {
+                const p = getPos(ev, canvas);
+                const pixel = ctx.getImageData(p.x, p.y, 1, 1).data;
+                const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+                const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+                state.brushColor = hex;
+                // update color preview and eyedropper preview
+                window.dispatchEvent(new CustomEvent('brushColorChange', { detail: hex }));
+                // switch to pen tool
+                state.drawingMode = 'pen';
+                document.body.style.cursor = '';
+                hideEyedropperPreview();
+                return;
+            }
             drawing = true;
             state.activeDrawingNotes.add(id);
             const p = getPos(ev, canvas);
             const pressure = (ev.pressure !== undefined && ev.pressure > 0) ? ev.pressure : 1.0;
             state.redoHistory[id] = [];
-            
             // current canvas state 
             savedCanvas = ctx.getImageData(0, 0, canvas.width, canvas.height);
             currentPath = [{ x: p.x, y: p.y, pressure }];
@@ -215,12 +245,42 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
         };
         
         canvas.addEventListener('mousedown', start);
-        canvas.addEventListener('mousemove', move);
-        canvas.addEventListener('mouseup', end);
-        canvas.addEventListener('mouseleave', end);
+        canvas.addEventListener('mousemove', (ev) => {
+            if (state.drawingMode === 'eyeDropper') {
+                const p = getPos(ev, canvas);
+                const pixel = ctx.getImageData(p.x, p.y, 1, 1).data;
+                const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+                const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+                showEyedropperPreview(ev.clientX, ev.clientY, hex);
+            } else {
+                hideEyedropperPreview();
+                move(ev);
+            }
+        });
+        canvas.addEventListener('mouseup', (ev) => {
+            end(ev);
+            hideEyedropperPreview();
+        });
+        canvas.addEventListener('mouseleave', (ev) => {
+            end(ev);
+            hideEyedropperPreview();
+        });
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); start(e.touches[0]); }, { passive: false });
-        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); move(e.touches[0]); }, { passive: false });
-        canvas.addEventListener('touchend', (e) => { e.preventDefault(); end(); }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (state.drawingMode === 'eyeDropper') {
+                const touch = e.touches[0];
+                const p = getPos(touch, canvas);
+                const pixel = ctx.getImageData(p.x, p.y, 1, 1).data;
+                const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+                const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+                showEyedropperPreview(touch.clientX, touch.clientY, hex);
+            } else {
+                hideEyedropperPreview();
+                move(e.touches[0]);
+            }
+        }, { passive: false });
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); end(); hideEyedropperPreview(); }, { passive: false });
     });
 }
 

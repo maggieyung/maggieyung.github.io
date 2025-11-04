@@ -98,38 +98,51 @@ function saveAction(action) {
 }
 
 document.addEventListener('keydown', (e) => {
-    // tool shortcuts 
-    if (e.key === 'b' || e.key === 'B') {
-        state.drawingMode = 'pen';
-        const penBtn = document.getElementById('penBtn');
-        const eraserBtn = document.getElementById('eraserBtn');
-        penBtn?.classList.add('active');
-        eraserBtn?.classList.remove('active');
-        const t = state.toolSettings.pen;
-        const sizeSlider = document.getElementById('sizeSlider'); const sizeValue = document.getElementById('sizeValue');
-        const flowSlider = document.getElementById('flowSlider'); const flowValue = document.getElementById('flowValue');
-        const opacitySlider = document.getElementById('opacitySlider'); const opacityValue = document.getElementById('opacityValue');
-        if (sizeSlider)  { sizeSlider.value = String(t.size); sizeValue.textContent = t.size; }
-        if (flowSlider)  { flowSlider.value = String(Math.round(t.flow * 100)); flowValue.textContent = Math.round(t.flow * 100); }
-        if (opacitySlider){ opacitySlider.value = String(Math.round(t.opacity * 100)); opacityValue.textContent = Math.round(t.opacity * 100); }
-        e.preventDefault();
-        return;
-    }
-    if (e.key === 'e' || e.key === 'E') {
-        state.drawingMode = 'eraser';
-        const penBtn = document.getElementById('penBtn');
-        const eraserBtn = document.getElementById('eraserBtn');
-        eraserBtn?.classList.add('active');
-        penBtn?.classList.remove('active');
-        const t = state.toolSettings.eraser;
-        const sizeSlider = document.getElementById('sizeSlider'); const sizeValue = document.getElementById('sizeValue');
-        const flowSlider = document.getElementById('flowSlider'); const flowValue = document.getElementById('flowValue');
-        const opacitySlider = document.getElementById('opacitySlider'); const opacityValue = document.getElementById('opacityValue');
-        if (sizeSlider)  { sizeSlider.value = String(t.size); sizeValue.textContent = t.size; }
-        if (flowSlider)  { flowSlider.value = String(Math.round(t.flow * 100)); flowValue.textContent = Math.round(t.flow * 100); }
-        if (opacitySlider){ opacitySlider.value = String(Math.round(t.opacity * 100)); opacityValue.textContent = Math.round(t.opacity * 100); }
-        e.preventDefault();
-        return;
+    // ignore tool shortcuts if editing a text field
+    const activeEl = document.activeElement;
+    const editingField = activeEl && (
+        activeEl.isContentEditable ||
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA'
+    );
+    if (!editingField) {
+        // tool shortcuts 
+        if (e.key === 'b' || e.key === 'B') {
+            state.drawingMode = 'pen';
+            const penBtn = document.getElementById('penBtn');
+            const pencilBtn = document.getElementById('pencilBtn');
+            const eraserBtn = document.getElementById('eraserBtn');
+            penBtn?.classList.add('active');
+            pencilBtn?.classList.remove('active');
+            eraserBtn?.classList.remove('active');
+            const t = state.toolSettings.pen;
+            const sizeSlider = document.getElementById('sizeSlider'); const sizeValue = document.getElementById('sizeValue');
+            const flowSlider = document.getElementById('flowSlider'); const flowValue = document.getElementById('flowValue');
+            const opacitySlider = document.getElementById('opacitySlider'); const opacityValue = document.getElementById('opacityValue');
+            if (sizeSlider)  { sizeSlider.value = String(t.size); sizeValue.textContent = t.size; }
+            if (flowSlider)  { flowSlider.value = String(Math.round(t.flow * 100)); flowValue.textContent = Math.round(t.flow * 100); }
+            if (opacitySlider){ opacitySlider.value = String(Math.round(t.opacity * 100)); opacityValue.textContent = Math.round(t.opacity * 100); }
+            e.preventDefault();
+            return;
+        }
+        if (e.key === 'e' || e.key === 'E') {
+            state.drawingMode = 'eraser';
+            const penBtn = document.getElementById('penBtn');
+            const pencilBtn = document.getElementById('pencilBtn');
+            const eraserBtn = document.getElementById('eraserBtn');
+            eraserBtn?.classList.add('active');
+            penBtn?.classList.remove('active');
+            pencilBtn?.classList.remove('active');
+            const t = state.toolSettings.eraser;
+            const sizeSlider = document.getElementById('sizeSlider'); const sizeValue = document.getElementById('sizeValue');
+            const flowSlider = document.getElementById('flowSlider'); const flowValue = document.getElementById('flowValue');
+            const opacitySlider = document.getElementById('opacitySlider'); const opacityValue = document.getElementById('opacityValue');
+            if (sizeSlider)  { sizeSlider.value = String(t.size); sizeValue.textContent = t.size; }
+            if (flowSlider)  { flowSlider.value = String(Math.round(t.flow * 100)); flowValue.textContent = Math.round(t.flow * 100); }
+            if (opacitySlider){ opacitySlider.value = String(Math.round(t.opacity * 100)); opacityValue.textContent = Math.round(t.opacity * 100); }
+            e.preventDefault();
+            return;
+        }
     }
 
     // flip canvas horizontally
@@ -143,8 +156,6 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    const ae = document.activeElement;
-    const editing = ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
     
     // if hovering over a draw canvas
     const hoverDrawNote = document.querySelector('.note[data-type="draw"]:hover');
