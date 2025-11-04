@@ -1,0 +1,582 @@
+* {
+    margin: 0;
+    padding: 0;
+    cursor: url(../../img/cursor.png), auto !important;
+}
+
+body.clicking * {
+    cursor: url(../../img/cursorclick.png), auto !important;
+}
+
+body.hovering * {
+    cursor: url(../../img/cursorhover.png), auto !important;
+}
+
+body.clicking.hovering * {
+    cursor: url(../../img/cursorclick.png), auto !important;
+}
+
+body.mini-cursor * {
+    cursor: url(../../img/cursormini.png), auto !important;
+}
+
+body.clicking.mini-cursor * {
+    cursor: url(../../img/cursormini.png), auto !important;
+}
+
+body {
+    background-image: url(../../img/background_oreo.png);
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    font-family: "Courier New", monospace;
+    overflow: hidden;
+}
+
+html, body {
+    overscroll-behavior: none;
+}
+
+.whiteboard {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+    user-select: none;
+    pointer-events: none;
+}
+
+.whiteboard.panning {
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.8);
+}
+
+.note {
+    position: absolute;
+    width: 160px;
+    height: 144px;
+    padding: 0;
+    user-select: none;
+    background-image: url(../../img/note.png); 
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    pointer-events: auto;
+}
+
+.note[data-type="draw"] {
+    background-image: url(../../img/notedraw.png);
+}
+
+.note-header {
+    color: #555;
+    font-size: 10px;
+    padding: 8px 10px 2px;
+    background: transparent; 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.note-text {
+    font-size: 12px;
+    line-height: 18px;
+    color: #333;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    padding: 4px 10px 10px;
+    height: calc(100% - 28px);
+    overflow: hidden;
+    outline: none; 
+    user-select: text;
+    background: transparent;
+}
+
+.draw-canvas {
+    display: block;
+    width: calc(100% - 20px);
+    height: calc(100% - 38px);
+    margin: 0 10px 10px;
+    background: transparent;
+}
+
+.note.dragging {
+    opacity: 0.8;
+    z-index: 1000;
+}
+
+.note.resizing { 
+    opacity: 0.9; 
+}
+
+.note.resize-mode {
+    box-shadow: 0 0 0 2px #ffffff;
+}
+
+.note.resize-mode::before,
+.note.resize-mode::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ffffff;
+    z-index: 10;
+}
+
+.note.resize-mode::before {
+    top: -5px;
+    left: -5px;
+}
+
+.note.resize-mode::after {
+    bottom: -5px;
+    right: -5px;
+}
+
+.resize-circle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ffffff;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.context-menu {
+    position: fixed;
+    background: #fff;
+    border: 1px solid #333;
+    padding: 5px 0;
+    z-index: 10000;
+    font-size: 12px;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+}
+
+.context-menu-item {
+    padding: 6px 20px;
+    color: #333;
+}
+
+.context-menu-item:hover {
+    background: #f0f0f0;
+}
+
+.toolbar {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+    background-image: url(../../img/dialoguebox.png);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    padding: 15px 20px;
+    min-width: 200px;
+    opacity: 0.8;
+}
+
+.toolbar-row {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.toolbar-button {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.toolbar-button:hover {
+    opacity: 0.7;
+}
+
+.toolbar-button.active {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.toolbar-slider-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.toolbar-label {
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    color: #fff;
+    user-select: none;
+}
+
+.toolbar-slider {
+    width: 150px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.3);
+    outline: none;
+    border-radius: 2px;
+}
+
+.toolbar-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.toolbar-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 50%;
+    border: none;
+}
+
+.toolbar-slider-container input[type="color"] {
+    width: 150px;
+    height: 25px;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 2px;
+    background: transparent;
+    padding: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 2px;
+}
+
+input[type="color"]::-moz-color-swatch {
+    border: none;
+    border-radius: 2px;
+}
+
+.color-selector {
+    width: 150px;
+    height: 25px;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+}
+
+.color-preview {
+    width: 100%;
+    height: 100%;
+    background-color: #000000;
+    border-radius: 2px;
+}
+
+.color-picker-popup {
+    position: fixed;
+    z-index: 10001;
+    background-image: url(../../img/dialoguebox.png);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    padding: 15px;
+    opacity: 0.95;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    margin-top: 10px;
+}
+
+.color-picker-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 14px;
+    font-family: "Courier New", monospace;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    user-select: none;
+    z-index: 10002;
+}
+
+.color-picker-close:hover {
+    opacity: 0.7;
+}
+
+.color-wheel {
+    display: block;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+}
+
+.color-indicator {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid #fff;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 2px rgba(0,0,0,0.9);
+    z-index: 10002;
+    display: none;
+}
+
+.color-indicator-ring {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid #fff;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 2px rgba(0,0,0,0.9);
+    z-index: 10002;
+    display: none;
+}
+
+.permanent-note {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 200px;
+    padding: 0;
+    user-select: none;
+    background-image: url(../../img/note.png);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    z-index: 500;
+    pointer-events: none;
+}
+
+.permanent-note-text {
+    font-size: 13px;
+    line-height: 18px;
+    color: #333;
+    padding: 15px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.shortcuts-note {
+    position: fixed;
+    top: 190px;
+    right: 20px;
+    width: 200px;
+    padding: 0;
+    user-select: none;
+    background-image: url(../../img/note.png);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    z-index: 500;
+    pointer-events: none;
+}
+
+.shortcuts-note-text {
+    font-size: 11px;
+    line-height: 16px;
+    color: #333;
+    padding: 15px;
+    text-align: left;
+}
+
+.shortcuts-popup {
+    position: fixed;
+    z-index: 10001;
+    padding: 18px 20px 16px 20px;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    margin-top: 10px;
+    min-width: 220px;
+    color: #fff;
+}
+
+.shortcuts-popup::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url(../../img/dialoguebox.png);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    opacity: 0.75; /* dialogue box */
+    pointer-events: none;
+    z-index: -1;
+}
+
+.shortcuts-content {
+    opacity: 0.9; /* text */
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.shortcuts-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 14px;
+    font-family: "Courier New", monospace;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    user-select: none;
+    z-index: 10002;
+}
+
+.shortcuts-close:hover {
+    opacity: 0.7;
+}
+
+.brush-preview {
+    position: fixed;
+    border: 1px solid #888;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10000;
+    display: none;
+}
+
+.brush-preview.active {
+    display: block;
+}
+
+#zoom-controls {
+    position: fixed;
+    right: 20px;
+    bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    z-index: 1000;
+}
+
+#zoom-controls button {
+    margin-bottom: 1px;
+    width: 30px;
+    height: 30px;
+    background: rgba(230, 230, 255, 0.9);
+    border: 1px solid #888;
+    font-family: "Courier New", monospace;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+}
+
+#zoom-controls button:hover {
+    background: rgba(200, 200, 255, 0.9);
+}
+
+#zoom-controls #zoom-label {
+    background: rgba(230, 230, 255, 0.9);
+    padding: 2px;
+    margin-bottom: 1px;
+    border: 1px solid #888;
+    width: 30px;
+    height: 30px;
+    line-height: 26px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: bold;
+    font-family: "Courier New", monospace;
+    user-select: none;
+}
+
+.minimap-container {
+    position: fixed;
+    z-index: 10001;
+    background-image: url(../../img/dialoguebox.png);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    padding: 15px;
+    opacity: 0.95;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    margin-top: 10px;
+}
+
+.minimap-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #fff;             
+    font-size: 14px;
+    font-family: "Courier New", monospace;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    padding: 0;
+    user-select: none;
+    z-index: 10002;
+}
+
+.minimap-close:hover {
+    opacity: 0.7;
+}
+
+#minimap {
+    display: block;
+    width: 200px;    
+    height: 120px;   
+    background: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+}
+
+/* selecting text */
+#mapBtn {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+}
+
+#zoom-controls, #zoom-controls *, .minimap-container, .minimap-close {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+}
