@@ -154,20 +154,20 @@ export function initToolbar() {
 }
 
 function initCustomColorPicker() {
-    // Color eyedropper preview logic
+    // color eyedropper preview 
     const eyeDropperColor = document.getElementById('eyeDropperColor');
     function updateEyeDropperPreview(color) {
         if (eyeDropperColor) eyeDropperColor.style.background = color || '#fff';
     }
     updateEyeDropperPreview(state.brushColor);
-    // Listen for brush color changes
+    // brush color changes
     window.addEventListener('brushColorChange', (e) => {
         updateEyeDropperPreview(e.detail);
-        // Update main menu color preview
+        // update main menu color preview
         if (typeof e.detail === 'string') {
             const hex = e.detail;
             if (colorPreview) colorPreview.style.backgroundColor = hex;
-            // Convert hex to HSL
+            // convert hex to HSL
             function hexToHSL(H) {
                 let r = 0, g = 0, b = 0;
                 if (H.length === 4) {
@@ -214,7 +214,7 @@ function initCustomColorPicker() {
             }
         }
     });
-    // Color eyedropper button logic
+    // color eyedropper
     const colorEyeDropperBtn = document.getElementById('colorEyeDropperBtn');
     if (colorEyeDropperBtn) {
         colorEyeDropperBtn.addEventListener('click', (e) => {
@@ -223,10 +223,8 @@ function initCustomColorPicker() {
             document.body.style.cursor = "url('../img/cursormini.png'), pointer";
             colorEyeDropperBtn.style.opacity = '0.4';
         });
-        // Listen for eyedropper completion to restore opacity
         window.addEventListener('brushColorChange', () => {
-            // Always restore to full opacity when a color is picked
-            colorEyeDropperBtn.style.opacity = '';
+            colorEyeDropperBtn.style.opacity = ''; // restore opacity
         });
     }
     const colorSelector = document.getElementById('colorSelector');
