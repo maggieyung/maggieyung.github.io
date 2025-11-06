@@ -5,8 +5,6 @@ let smallNoteImg = null;
 
 // zoom/pan state and limits
 let currentScale = 1;
-const minScale = 0.5;
-const maxScale = 3.0;
 let currentX = 0; 
 let currentY = 0; 
 const PAN_LIMIT = 3000; // hard limit in screen px
@@ -33,46 +31,9 @@ function getContentBounds() {
     return { minX, minY, maxX, maxY };
 }
 
-function clampPan() {
-    const b = getContentBounds();
-    if (!b) {
-        currentX = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, currentX));
-        currentY = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, currentY));
-        return;
-    }
-
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const s = currentScale;
-    const MARGIN = 100; // 100px from viewport edge
-
-    const maxAllowedX = MARGIN - b.minX * s;
-    const minAllowedX = (vw - MARGIN) - b.maxX * s;
-    const maxAllowedY = MARGIN - b.minY * s;
-    const minAllowedY = (vh - MARGIN) - b.maxY * s;
-
-    if (minAllowedX > maxAllowedX) {
-        const contentCenterX = ((b.minX + b.maxX) / 2) * s;
-        currentX = vw / 2 - contentCenterX;
-    } else {
-        currentX = Math.max(minAllowedX, Math.min(maxAllowedX, currentX));
-    }
-
-    if (minAllowedY > maxAllowedY) {
-        const contentCenterY = ((b.minY + b.maxY) / 2) * s;
-        currentY = vh / 2 - contentCenterY;
-    } else {
-        currentY = Math.max(minAllowedY, Math.min(maxAllowedY, currentY));
-    }
-
-    currentX = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, currentX));
-    currentY = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, currentY));
-}
-
 function updateTransform() {
     const wb = document.getElementById('whiteboard');
     if (!wb) return;
-    clampPan();
     wb.style.transformOrigin = '0 0';
     wb.style.transform = `translate(${currentX}px, ${currentY}px) scale(${currentScale})`;
     state.zoom = currentScale;
@@ -95,20 +56,16 @@ function handleZoom(event) {
     if (!wb) return;
 
     // zoom towards mouse position
-    const rect = wb.getBoundingClientRect();
     const mouseX = event.clientX;
     const mouseY = event.clientY;
 
     // content coords before zoom
-    const cx = (mouseX - rect.left) / currentScale;
-    const cy = (mouseY - rect.top) / currentScale;
+    const cx = (mouseX - currentX) / currentScale;
+    const cy = (mouseY - currentY) / currentScale;
 
-    // compute new scale
-    let newScale = currentScale + event.deltaY * -0.01;
-    newScale = Math.max(minScale, Math.min(maxScale, newScale));
-    if (newScale === currentScale) return;
+    const zoomFactor = Math.exp(-event.deltaY * 0.002);
+    const newScale = currentScale * zoomFactor;
 
-    // adjust pan so the point under the cursor stays stable
     currentX = mouseX - cx * newScale;
     currentY = mouseY - cy * newScale;
 
@@ -283,21 +240,6 @@ export function initZoom() {
         if (typeof state.zoom === 'number') {
             currentScale = state.zoom;
         } else {
-            const bounds = getContentBounds();
-            if (bounds) {
-                const vw = window.innerWidth;
-                const vh = window.innerHeight;
-                const notesWidth = bounds.maxX - bounds.minX;
-                const notesHeight = bounds.maxY - bounds.minY;
-                const margin = 80;
-                const scaleX = (vw - margin * 2) / notesWidth;
-                const scaleY = (vh - margin * 2) / notesHeight;
-                currentScale = Math.max(minScale, Math.min(maxScale, Math.min(scaleX, scaleY)));
-                currentX = vw / 2 - ((bounds.minX + notesWidth / 2) * currentScale);
-                currentY = vh / 2 - ((bounds.minY + notesHeight / 2) * currentScale);
-            } else {
-                currentScale = 1;
-            }
         }
         updateTransform();
         refreshMinimap();

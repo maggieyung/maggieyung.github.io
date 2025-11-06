@@ -1,6 +1,4 @@
 import { state } from './state.js';
-import { refreshMinimap } from './zoom.js'; 
-
 export function initToolbar() {
     const penBtn = document.getElementById('penBtn');
     const pencilBtn = document.getElementById('pencilBtn');
@@ -77,7 +75,6 @@ export function initToolbar() {
         const isVisible = minimapContainer.style.display !== 'none';
         minimapContainer.style.display = isVisible ? 'none' : 'block';
         mapBtn.classList.toggle('active');
-        if (!isVisible) requestAnimationFrame(() => refreshMinimap());
     });
 
     // shortcuts popup toggle
