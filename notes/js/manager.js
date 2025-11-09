@@ -138,14 +138,42 @@ function setupDrawNoteInteractions(note) {
 
 function setupNoteInteractions(note, id, notesRef) {
     note.onmousedown = function(e) {
+        // track move start for undo/redo
+        note._moveStart = {
+            x: parseInt(note.style.left, 10) || 0,
+            y: parseInt(note.style.top, 10) || 0
+        };
         // handle resize mode if selected note
         if (state.resizeModeEnabled && state.resizeModeNoteId === id) {
             const edge = getEdge(note, e.clientX, e.clientY);
             if (edge) {
+                // track resize start for undo/redo
+                note._resizeStartW = parseInt(note.style.width, 10) || note.offsetWidth;
+                note._resizeStartH = parseInt(note.style.height, 10) || note.offsetHeight;
                 startResize(note, id, edge, e, notesRef);
                 return;
             }
         }
+    };
+
+    note.onmouseup = function(e) {
+        // track move end 
+        const start = note._moveStart;
+        const endX = parseInt(note.style.left, 10) || 0;
+        const endY = parseInt(note.style.top, 10) || 0;
+        if (start && (start.x !== endX || start.y !== endY)) {
+            state.actionHistory.push({
+                type: 'move',
+                noteId: id,
+                from: { x: start.x, y: start.y },
+                to: { x: endX, y: endY }
+            });
+            if (state.actionHistory.length > (state.maxActionHistorySize || 50)) {
+                state.actionHistory.shift();
+            }
+            state.actionRedoHistory = [];
+        }
+        note._moveStart = null;
     };
 }
 

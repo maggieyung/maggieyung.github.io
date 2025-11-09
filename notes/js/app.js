@@ -32,70 +32,12 @@ notesRef.on('child_added', (snapshot) => {
     );
     applySize(note, (noteData.w || NOTE_W), (noteData.h || NOTE_H));
     board.appendChild(note);
-    
     if (state.pendingFocusId === snapshot.key) {
         const editable = note.querySelector('.note-text');
         if (editable) editable.focus();
         state.pendingFocusId = null;
     }
 });
-
-notesRef.on('child_changed', (snapshot) => {
-    const noteData = snapshot.val();
-    const noteEl = document.querySelector(`[data-id="${snapshot.key}"]`);
-    if (!noteEl) return;
-    
-    noteEl.style.left = noteData.x + 'px';
-    noteEl.style.top = noteData.y + 'px';
-    applySize(noteEl, (noteData.w || NOTE_W), (noteData.h || NOTE_H));
-    
-    const type = noteData.type || 'text';
-    if (type === 'text') {
-        const t = noteEl.querySelector('.note-text');
-        if (t) t.textContent = noteData.text || '';
-    } else if (type === 'draw') {
-        const c = noteEl.querySelector('.draw-canvas');
-        if (c && noteData.data && !state.activeDrawingNotes.has(snapshot.key)) {
-            const ctx = c.getContext('2d');
-            const img = new Image();
-            img.onload = () => {
-                if (c.width !== c.clientWidth || c.height !== c.clientHeight) {
-                    c.width = c.clientWidth; 
-                    c.height = c.clientHeight;
-                }
-                ctx.clearRect(0,0,c.width,c.height);
-                ctx.drawImage(img, 0, 0, c.width, c.height);
-            };
-            img.src = noteData.data;
-        }
-    }
-});
-
-notesRef.on('child_removed', (snapshot) => {
-    const noteEl = document.querySelector(`[data-id="${snapshot.key}"]`);
-    if (noteEl) noteEl.remove();
-});
-
-// convert screen coords to whiteboard content coords
-function screenToWhiteboard(screenX, screenY) {
-    const wb = document.getElementById('whiteboard');
-    const rect = wb.getBoundingClientRect();
-    const zoom = state.zoom || 1;
-    
-    return {
-        x: (screenX - rect.left) / zoom,
-        y: (screenY - rect.top) / zoom
-    };
-}
-
-// save action to history
-function saveAction(action) {
-    state.actionHistory.push(action);
-    if (state.actionHistory.length > state.maxActionHistorySize) {
-        state.actionHistory.shift();
-    }
-    state.actionRedoHistory = []; // clear redo when new action is made
-}
 
 document.addEventListener('keydown', (e) => {
     // ignore tool shortcuts if editing a text field
@@ -156,39 +98,50 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    
-    // if hovering over a draw canvas
-    const hoverDrawNote = document.querySelector('.note[data-type="draw"]:hover');
-    
+    // ctrl/cmd+z and ctrl/cmd+y for drawing notes (regardless of hover)
     if (e.key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
         e.preventDefault();
-        
-        // draw undo
-        if (hoverDrawNote && !editing) {
-            const noteId = hoverDrawNote.getAttribute('data-id');
+        // find most recently active drawing note
+        let noteId = null;
+        if (state.activeDrawingNotes && state.activeDrawingNotes.size > 0) {
+            
+            noteId = Array.from(state.activeDrawingNotes).slice(-1)[0];
+        } else {
+            const drawNotes = document.querySelectorAll('.note[data-type="draw"]');
+            if (drawNotes.length > 0) {
+                noteId = drawNotes[drawNotes.length - 1].getAttribute('data-id');
+            }
+        }
+        if (noteId) {
             undo(noteId, notesRef);
-        } else if (!editing) {
-            // action undo
+        } else {
+            // action undo for non-drawing notes
             performUndo();
         }
         return;
     }
-    
+
     if ((e.key === 'z' && (e.ctrlKey || e.metaKey) && e.shiftKey) || 
         (e.key === 'y' && (e.ctrlKey || e.metaKey))) {
         e.preventDefault();
-        
-        // draw redo
-        if (hoverDrawNote && !editing) {
-            const noteId = hoverDrawNote.getAttribute('data-id');
+        // find most recently active drawing note
+        let noteId = null;
+        if (state.activeDrawingNotes && state.activeDrawingNotes.size > 0) {
+            noteId = Array.from(state.activeDrawingNotes).slice(-1)[0];
+        } else {
+            const drawNotes = document.querySelectorAll('.note[data-type="draw"]');
+            if (drawNotes.length > 0) {
+                noteId = drawNotes[drawNotes.length - 1].getAttribute('data-id');
+            }
+        }
+        if (noteId) {
             redo(noteId, notesRef);
-        } else if (!editing) {
-            // action redo
+        } else {
             performRedo();
         }
         return;
     }
-    
+
     if (editing) return;
 
     let x, y;

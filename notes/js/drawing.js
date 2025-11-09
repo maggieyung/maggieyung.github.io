@@ -25,8 +25,11 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
         if (!state.undoHistory[id]) {
             state.undoHistory[id] = [];
             state.redoHistory[id] = [];
+            // save initial blank canvas as first history entry
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            saveToHistory(id, canvas);
         }
-        
+
         if (data) {
             const img = new Image();
             img.onload = () => {
@@ -34,8 +37,6 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
                 saveToHistory(id, canvas);
             };
             img.src = data;
-        } else {
-            saveToHistory(id, canvas);
         }
 
         let drawing = false;
@@ -318,16 +319,21 @@ function saveToHistory(id, canvas) {
         if (!state.undoHistory[id]) {
             state.undoHistory[id] = [];
         }
-        state.undoHistory[id].push(imageData);
-        
-        if (state.undoHistory[id].length > state.maxHistorySize) {
-            state.undoHistory[id].shift();
+        // push if different from last snapshot
+        const last = state.undoHistory[id][state.undoHistory[id].length - 1];
+        if (imageData !== last) {
+            state.undoHistory[id].push(imageData);
+            if (state.undoHistory[id].length > state.maxHistorySize) {
+                state.undoHistory[id].shift();
+            }
         }
     } catch (_) {}
 }
 
-export function undo(noteId, notesRef) {
-    if (!state.undoHistory[noteId] || state.undoHistory[noteId].length <= 1) return;
+export function undo(noteId, notesRef) { 
+    if (!state.undoHistory[noteId] || state.undoHistory[noteId].length <= 1) {
+        return;
+    }
 
     const current = state.undoHistory[noteId].pop();
     if (!state.redoHistory[noteId]) {
@@ -355,7 +361,9 @@ export function undo(noteId, notesRef) {
 }
 
 export function redo(noteId, notesRef) {
-    if (!state.redoHistory[noteId] || state.redoHistory[noteId].length === 0) return;
+    if (!state.redoHistory[noteId] || state.redoHistory[noteId].length === 0) {
+        return;
+    }
 
     const next = state.redoHistory[noteId].pop();
     state.undoHistory[noteId].push(next);

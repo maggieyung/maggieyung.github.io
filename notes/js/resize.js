@@ -120,6 +120,20 @@ function onResizeEnd() {
     const x = parseInt(note.style.left, 10) || 0;
     const y = parseInt(note.style.top, 10) || 0;
 
+    // resize action for undo/redo
+    const prevW = note._resizeStartW || w;
+    const prevH = note._resizeStartH || h;
+    state.actionHistory.push({
+        type: 'resize',
+        noteId: id,
+        from: { w: prevW, h: prevH },
+        to: { w, h }
+    });
+    if (state.actionHistory.length > (state.maxActionHistorySize || 50)) {
+        state.actionHistory.shift();
+    }
+    state.actionRedoHistory = [];
+
     const canvas = note.querySelector('.draw-canvas');
     if (canvas) {
         try {
