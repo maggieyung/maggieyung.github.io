@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maggie Yung | SWE 🫧</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Jacquard+12&family=Silkscreen&display=swap" rel="stylesheet" type="text/css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            background-image: linear-gradient(0deg, rgba(247,247,250,0.6) 0%, rgba(236,236,236,0.6) 100%);
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            background-repeat: no-repeat;
+            font-family: 'Segoe UI', 'Arial', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        /* canvas overlay */
+        #backdrop-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            opacity: 0.5; 
+            pointer-events: none;
+        }
+
+        :root {
+            --box-w: min(900px, 90vw); 
+            --avatar: 200px;           
+            --p-pad: 20px 24px 18px;  
+            --p-size: 17px;            
+            --cont-size: 20px;          
+        }
+
+        /* global custom cursor */
+        html, body, * {
+            cursor: url("../img/cursor.png") 16 16, auto;
+        }
+        /* click */
+        html:active, body:active, *:active {
+            cursor: url("../img/cursorclick.png") 16 16, auto;
+        }
+        
+        /* custom cursor */
+        .custom-cursor {
+            display: inline-block;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            cursor: url("../img/cursor.png") 16 16, default;
+        }
+        .custom-cursor:hover {
+            cursor: url("../img/cursorhover.png") 16 16, default;
+        }
+        .custom-cursor:active {
+            cursor: url("../img/cursorclick.png") 16 16, default;
+        }
+        .custom-cursor:focus {
+            cursor: url("../img/cursorhover.png") 16 16, default;
+        }
+
+        .about-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            max-width: 900px;
+            margin: 40px auto;
+            left: 0;
+            right: 0;
+            position: relative;
+        }
+        .about-container-bg {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 120%;
+            height: 120%;
+            z-index: 0;
+            pointer-events: none;
+            border-radius: 30px;
+            background: radial-gradient(circle at 50% 50%, #e4bcd0 1%, #dbb3f1 10%, transparent 100%);
+            opacity: 0.7;
+        }
+        .style1,
+        h1.style1, h2.style1, h3.style1, p.style1 {
+            text-align: center;
+            color: #A397AD;
+            font-family: 'Jacquard 12', cursive;
+            letter-spacing: 0.3rem;
+            width: calc(100% + 0.3rem);
+            font-size: 1.875em;
+            line-height: 1.5;
+            font-weight: 400;
+            background-image: linear-gradient(0deg, #FFFFFF 0%, #9384a0 51%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            -webkit-text-stroke: 0.03em rgba(83, 28, 184, 0.49);
+            text-stroke: 0.03em rgba(40, 31, 136, 0.49);
+        }
+        .style2,
+        h1.style2, h2.style2, h3.style2, p.style2 {
+            text-align: center;
+            color: #4a4550;
+            font-family: 'Silkscreen', monospace;
+            font-size: 1.1em;
+            line-height: 0.875;
+            font-weight: 300;
+            background-image: linear-gradient(80deg, #cf86c0 6%, #6943af 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            -webkit-text-stroke: 0.01em #e4247d;
+            margin-left: 0;
+            width: auto;
+            display: block;
+            /* align-self: flex-start; */
+        }
+        .style3 {
+            text-align: center;
+            font-family: 'DotGothic16', sans-serif;
+            letter-spacing: 0.1rem;
+            line-height: 1;
+            font-weight: 400;
+            margin-bottom: 0.5em;
+        }
+    
+        .style4,
+        h1.style4, h2.style4, h3.style4, p.style4 {
+            text-align: center;
+            font-family: 'Jacquard 12', cursive;
+            letter-spacing: 0.3rem;
+            width: calc(100% + 0.3rem);
+            font-size: 1.875em;
+            line-height: 1.5;
+            font-weight: 400;
+            background-image: linear-gradient(0deg, #e8f0d6 0%, #697469 51%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            -webkit-text-stroke: 0.03em rgba(55, 107, 30, 0.49);
+        }
+        .header-silkscreen { font-family: 'Silkscreen', ; }
+        .header-dmserif { font-family: 'DM Serif Text', serif; }
+        .star-gradient {
+            font-size: 2em;
+            text-align: center;
+            margin-bottom: 10px;
+            font-family: 'DotGothic16', sans-serif;
+            background: linear-gradient(90deg, #a397ad 10%, #6559aa 60%, #d791e0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 2px 8px #ff75f488);
+        }
+
+        /* parent containers centered */
+        .centered-section {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .home-link {
+            color: #642961;
+            font-size: 32px;
+            text-decoration: none;
+            font-family: 'Courier New', monospace;
+            position: fixed;
+            top: 32px;
+            right: 32px;
+            z-index: 1000;
+            padding: 0;
+            border-radius: 0;
+            background: none;
+            transition: color 0.2s, text-shadow 0.2s;
+        }
+
+        .home-link:hover {
+            color: #fff;
+            text-shadow: 0 0 0 rgba(0,0,0,0), 0 0 16px rgba(0,0,0,0.4), 0 0 0 #000;
+            background: none;
+            opacity: 1;
+        }
+
+        .photo {
+            object-fit: cover !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            display: block;
+        }
+        .gallery-flex {
+            gap: 0 !important;
+        }
+    </style>
+</head>
+<body>
+
+            <span style="margin-right: 39px;"></span>
+            <a href="../index.html" class="custom-cursor k home-link" style="
+        color: #642961;
+        font-size: 32px;
+        text-decoration: none;
+        font-family: 'Courier New', monospace;
+        position: fixed;
+        top: 25px;
+        right: 60px;
+        z-index: 1000;
+        padding: 0;
+        border-radius: 0;
+        background: none;
+        transition: color 0.2s, text-shadow 0.2s;
+">
+                home
+            </a>
+            <style>
+    .home-link:hover {
+        color: #fff;
+        text-shadow: 0 0 0 rgba(0,0,0,0), 0 0 16px rgba(0,0,0,0.4), 0 0 0 #000;
+        background: none;
+        opacity: 1;
+    }
+</style>
+
+    <!-- canvas background -->
+    <canvas id="backdrop-canvas"></canvas>
+    <div style="position:relative;">
+        <div class="about-container-bg"></div>
+        <div class="about-container">
+            <div class="star-gradient">⋆｡˚✦ </div>
+            <!-- header -->
+            <h1 class="style1" style="font-size:2em; margin: 10px 0;">c:\users\maggie</h1>
+
+            <h1 class="style3 header-tiltwarp" style="color: #1b1b1a;">🎄Hi, I'm Maggie 🫧</h1>
+            <div style="height: 20px;"></div>
+            <div style="font-size:1.3em;color: #1b1b1a;">I'm a full-stack software engineer, game developer, and artist!</div>
+            <div style="height: 20px;"></div>
+            <img src="../img/myprofile.png" height="400" style="display: block; margin: 0 auto;" draggable="false">
+            <h1 class="style3 header-dotgothic"><span style="font-family: inherit; font-size: 0.8em; color: #3b3197;">nice to meet you!</span></h1>
+            <div style="height: 15px;"></div>
+
+            <div class="star-gradient" style="opacity:0.7;"> ݁₊✧⊹ </div>
+            
+
+        </div>
+    </div>
+
+
+
+    <div style="height: 80px;"></div>
+    <div style="max-width:700px; font-size:1.3em; margin:0 auto; text-align:center;">
+        I am a <strong>Computer Science</strong> major at the University of Massachusetts Boston, and a <strong>ML/AI</strong> Fellow at Break Through Tech AI MIT.
+        <div style="height: 32px;"></div>
+        </div>
+        <div style="width:100%;max-width:750px;margin:0 auto;padding:10px 0 0 0;border-top:2px solid #e2d2e9;">
+            <h1 class="style1" style="font-size:2em; margin: 6px 0;">://skills</h1>
+            <p><strong>Languages:</strong> </p> <span style="margin-left:16px;font-size: 1em;">Python, C, C#, Java, JavaScript, HTML/CSS, C++</span></p>
+            <p><strong>ML/DL:</strong> </p><span style="margin-left:16px;font-size: 1em;">Keras, Pandas, Matplotlib, NumPy, scikit-learn, Ultralytics, Roboflow, SciPy</span></p>
+            <p><strong>Frameworks and Libraries:</strong> </p><span style="margin-left:16px;font-size: 1em;">TensorFlow, WebGL, Three.js, OpenCV, XTK</span></p>
+            <p><strong>Software:</strong> </p><span style="margin-left:16px;font-size: 1em;">Unity (UI Toolkit), Adobe Suite (Photoshop, After Effects), Blender, Figma, Asesprite, Live2D Cubism</span></p>
+            <p><strong>Game Development:</strong> </p><span style="margin-left:16px;font-size: 1em;">UI/UX, Design Documentation, Unit Testing, Version Control, Quality Assurance, AGILE</span></p>
+        </div>
+
+        
+
+
+
+
+        <!-- media -->
+        <div style="position:relative;width:100vw;left:50%;transform:translateX(-50%);display:flex;justify-content:center;align-items:center;gap:0;margin:0;padding:0;">
+    <a href="https://github.com/maggieyung/cs460student/tree/main/02" target="_blank" class="media-link-hover" style="flex:1;display:block;position:relative;">
+        <div class="media-hover-wrap" style="position:relative;width:100%;height:100%;">
+            <img src="../img/catcube.png" style="width:50vw;height:auto;max-height:400px;display:block;object-fit:cover;image-rendering:auto;margin:0;padding:0;border:0;" loading="lazy" decoding="async">
+            <div class="media-overlay">
+                <div class="media-overlay-content">
+                    <span class="media-title">Web Cube Editor</span>
+                    <span class="media-tech">
+                    HTML <span style="font-size:0.7em;color:#75ce6d;">#</span> JS <span style="font-size:0.7em;color:#75ce6d;">%</span> XTK
+                    </span>
+                </div>
+            </div>
+        </div>
+    </a>
+    <a href="https://github.com/maggieyung/maggieyung.github.io/tree/main/notes" target="_blank" class="media-link-hover" style="flex:1;display:block;position:relative;">
+        <div class="media-hover-wrap" style="position:relative;width:100%;height:100%;">
+            <img src="../img/paintfun.gif" style="width:50vw;height:auto;max-height:400px;display:block;object-fit:cover;image-rendering:auto;margin:0;padding:0;border:0;" loading="lazy" decoding="async">
+            <div class="media-overlay">
+                <div class="media-overlay-content">
+                    <span class="media-title">Collaborative Web Guestbook</span>
+                    <span class="media-tech">
+                        HTML <span style="font-size:0.7em;color:#75ce6d;">#</span> CSS <span style="font-size:0.7em;color:#75ce6d;">%</span> JS <span style="font-size:0.7em;color:#75ce6d;">&</span> Firebase
+                    </span>
+                </div>
+            </div>
+        </div>
+    </a>
+</div>
+<style>
+    .media-link-hover {
+        cursor: url("../img/cursorhover.png") 16 16, pointer !important;
+    }
+    .media-hover-wrap {
+        position: relative;
+        display: inline-block;
+        vertical-align: top;
+        margin: 0;
+        padding: 0;
+    }
+    .media-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7);
+        opacity: 0;
+        transition: opacity 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        /* Add cursor for overlay */
+        cursor: url("../img/cursorhover.png") 16 16, pointer !important;
+    }
+    .media-hover-wrap:hover .media-overlay {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .media-overlay-content {
+        color: #fff;
+        text-align: center;
+        font-size: 1.2em;
+        font-family: 'Segoe UI', 'Arial', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        justify-content: center;
+        align-items: center;
+    }
+    .media-title {
+        font-weight: bold;
+        font-size: 1.2em;
+        letter-spacing: 0.05em;
+    }
+    .media-tech {
+        font-size: 1em;
+        opacity: 0.8;
+    }
+</style>
+
+
+        <div style="width:100%;max-width:750px;margin:0 auto;padding:10px 0 0 0;border-top:2px solid #e2d2e9;">
+            
+
+
+
+            
+        <!-- gallery -->
+<div class="gallery-row" style="display: flex; flex-wrap: wrap; align-items: stretch; justify-content: center; width: 100vw; margin-left: 50%; transform: translateX(-50%); padding: 0; gap: 0;">
+    <img src="../img/ahriprocess.gif" alt="ahri" class="photo">
+    <img src="../img/stocking.jpg" alt="stocking" class="photo">
+    <img src="../img/miti_oc.jpg" alt="miti" class="photo">
+    <img src="../img/lau.jpg" alt="lau" class="photo">
+    <img src="../img/stringcheese.png" alt="string cheese" class="photo">
+
+</div>
+<style>
+    .gallery-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        justify-content: center;
+        width: 100vw;
+        margin-left: 50%;
+        transform: translateX(-50%);
+        padding: 0;
+        gap: 0;
+    }
+    .photo {
+        flex: 1 1 auto;
+        min-width: 200px;
+        max-width: 20vw;
+        height: auto;
+        max-height: 400px;
+        object-fit: contain;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        display: block;
+        background: #fff;
+    }
+</style>
+            
+
+
+        </div>
+        <div style="width:100vw;position:relative;left:50%;transform:translateX(-50%);padding:10px 0 0 0;border-top:2px solid #e2d2e9; background: radial-gradient(circle at 50% 30%, #d5ddc1 0%, #dcddd9 70%, #b8afaf 100%);">
+    <h1 class="style4" style="font-size:2em; margin: 6px 0;">://contact</h1>
+    <p style="text-align:center; font-size: 20px">Email: <a href="mailto:maggieyung677@gmail.com" style="color:#475f21;text-decoration:underline;">maggieyung677@gmail.com</a></p>
+    <p style="text-align:center; font-size: 20px">Linkedin: <a href="https://www.linkedin.com/in/maggieyung/" target="_blank" style="color:#475f21;text-decoration:underline;">/in/maggieyung/</a></p>
+
+
+            <div style="height: 30px;"></div>
+                <h1 class="style3 header-dotgothic"><span style="font-family: inherit; font-size: 0.8em; color: #4f772f;">🐧 thank you for visiting 🥬 </span></h1>
+
+            <div style="height: 80px;"></div>
+
+</div>
+            
+</body>
+</html>
