@@ -47,30 +47,54 @@ export function setupCollaborativeCursors(db, userId, getWhiteboardInfo) {
     });
 
     // listen for all active cursors 
-    db.ref('cursors').on('value', (snapshot) => {
-        const cursors = snapshot.val() || {};
+    function renderCursors(cursors) {
         document.querySelectorAll('.collab-cursor').forEach(el => el.remove());
         Object.entries(cursors).forEach(([uid, pos]) => {
-            if (uid === userId) return;
-            if (!pos.active) return; 
+            if (!pos.active) return;
+            if (uid === userId) return; // Do not render own cursor
             const wb = document.querySelector(`[data-board-id="${pos.boardId}"]`) || document.getElementById('whiteboard');
             if (!wb) return;
             const rect = wb.getBoundingClientRect();
             let cursor = document.createElement('div');
             cursor.className = 'collab-cursor';
             cursor.style.position = 'absolute';
-            cursor.style.left = (rect.left + pos.x * (pos.zoom || 1)) + 'px';
-            cursor.style.top = (rect.top + pos.y * (pos.zoom || 1)) + 'px';
-            cursor.style.width = (18 * (pos.zoom || 1)) + 'px';
-            cursor.style.height = (18 * (pos.zoom || 1)) + 'px';
+            // normalized coordinates and local zoom for rendering
+            const localZoom = window.whiteboardZoom || 1;
+            cursor.style.left = (rect.left + pos.x * localZoom) + 'px';
+            cursor.style.top = (rect.top + pos.y * localZoom) + 'px';
+            cursor.style.width = (6 * (pos.zoom || 1)) + 'px';
+            cursor.style.height = (6 * (pos.zoom || 1)) + 'px';
             cursor.style.borderRadius = '50%';
             cursor.style.background = pos.drawing ? 'rgba(189, 162, 162, 0.1)' : 'rgba(209, 209, 209, 0.1)';
             cursor.style.border = pos.drawing ? '2px solid #e4247d' : '1px solid #533f74ff';
             cursor.style.pointerEvents = 'none';
             cursor.style.zIndex = 9999;
             cursor.title = pos.boardId ? `Board: ${pos.boardId}` : '';
+            // mini img
+            const img = document.createElement('img');
+            img.src = '/img/cursormini.png';
+            img.alt = 'cursor';
+            img.style.position = 'absolute';
+            img.style.left = '110%'; // offset
+            img.style.top = '55%';   
+            img.style.transform = 'translate(-10%, -50%)';
+            img.style.width = (14 * (pos.zoom || 1)) + 'px';
+            img.style.height = (14 * (pos.zoom || 1)) + 'px';
+            img.style.pointerEvents = 'none';
+            cursor.appendChild(img);
             document.body.appendChild(cursor);
         });
+    }
+
+    let lastCursors = {};
+    db.ref('cursors').on('value', (snapshot) => {
+        lastCursors = snapshot.val() || {};
+        renderCursors(lastCursors);
+    });
+
+    // re-render cursors
+    window.addEventListener('zoomchange', () => {
+        renderCursors(lastCursors);
     });
         //  delete inactive cursors
         setInterval(() => {
