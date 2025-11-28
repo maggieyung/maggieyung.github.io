@@ -61,8 +61,8 @@ export function setupCollaborativeCursors(db, userId, getWhiteboardInfo) {
             cursor.style.position = 'absolute';
             cursor.style.left = (rect.left + pos.x * (pos.zoom || 1)) + 'px';
             cursor.style.top = (rect.top + pos.y * (pos.zoom || 1)) + 'px';
-            cursor.style.width = (12 * (pos.zoom || 1)) + 'px';
-            cursor.style.height = (12 * (pos.zoom || 1)) + 'px';
+            cursor.style.width = (18 * (pos.zoom || 1)) + 'px';
+            cursor.style.height = (18 * (pos.zoom || 1)) + 'px';
             cursor.style.borderRadius = '50%';
             cursor.style.background = pos.drawing ? 'rgba(189, 162, 162, 0.1)' : 'rgba(209, 209, 209, 0.1)';
             cursor.style.border = pos.drawing ? '2px solid #e4247d' : '1px solid #533f74ff';
@@ -72,6 +72,19 @@ export function setupCollaborativeCursors(db, userId, getWhiteboardInfo) {
             document.body.appendChild(cursor);
         });
     });
+        //  delete inactive cursors
+        setInterval(() => {
+            db.ref('cursors').once('value').then(snapshot => {
+                const cursors = snapshot.val() || {};
+                const now = Date.now();
+                Object.entries(cursors).forEach(([uid, pos]) => {
+                    // remove if inactive and last update > 5 min ago
+                    if (!pos.active && pos.ts && (now - pos.ts > 5 * 60 * 1000)) {
+                        db.ref('cursors/' + uid).remove();
+                    }
+                });
+            });
+        }, 60 * 1000); // every min
 }
 
 // real-time updates
