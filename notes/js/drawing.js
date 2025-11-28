@@ -282,6 +282,31 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
             }
         }, { passive: false });
         canvas.addEventListener('touchend', (e) => { e.preventDefault(); end(); hideEyedropperPreview(); }, { passive: false });
+
+        // real-time listener for drawing and text updates
+        listenForDrawingUpdates(notesRef, id, canvas);
+    });
+}
+
+// updates to drawing notes (call after canvas is created)
+export function listenForDrawingUpdates(notesRef, noteId, canvas) {
+    // remove previous listeners 
+    notesRef.child(noteId).off('value');
+    notesRef.child(noteId).on('value', (snapshot) => {
+        const note = snapshot.val();
+        if (note && note.type === 'draw' && note.data) {
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = note.data;
+        }
+        if (note && note.type === 'text' && note.text) {
+            const textEl = canvas.parentElement?.querySelector('.note-text');
+            if (textEl) textEl.textContent = note.text;
+        }
     });
 }
 
