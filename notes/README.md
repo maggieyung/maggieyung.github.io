@@ -27,9 +27,12 @@ https://maggieyung.github.io/notes/
 
 <img  height="270" src="../img/spunchbob.gif"/> 
 
-- 🙌 **Collaborative drawing:** Multiple users can draw on the same canvas with real-time updates and presence cursors.
+- 🙌 **Collaborative drawing:** Multiple users can draw on the same canvas with real-time updates and presence cursors
 
-<img  height="270" src="../img/cursor.gif" /> <img  height="270" src="../img/ghastdraw.gif" />
+<img  height="250" src="../img/cursor.gif" /> <img  height="250" src="../img/ghastdraw.gif" /> 
+
+<img height="150" alt="image" src="https://github.com/user-attachments/assets/c0ab2c74-8991-42b5-a096-2c7f8534a17c" />
+
 
 
 ### 🎐 Technologies
@@ -45,6 +48,7 @@ https://maggieyung.github.io/notes/
 ### 🍀 Keyboard & Mouse Shortcuts
 
 - **[MB2]:** Open the dropdown context menu for quick actions
+    - Add note/move/resize/delete
 - **[b]:** Switch to Pen
 - **[p]:** Switch to Pencil
 - **[e]:** Switch to Eraser
@@ -71,8 +75,10 @@ https://maggieyung.github.io/notes/
 - **Avatars showing active users:** Add visual indicators (desktop pets) to display which users are currently active and what they're working on.
 - **Personalization**: Customizing brushes, UI, or how the cursors appear
 - **Real-time sync:** When multiple users draw on the same note simultaneously, strokes can occasionally be overwritten due to the snapshot sync. Move from canvas snapshots to individual stroke events
-- **Drawing layers:** Implement layer arrangement options to keep canvas elements separate to be edited independently.
+- **Drawing layers:** Implement layer arrangement options, keeping canvas elements separate to be edited independently.
 - **Export/import:** Save and restore whiteboard canvas or individual notes
 
 <img height="200" alt="image" src="https://github.com/user-attachments/assets/26f4656d-71b9-4bd8-ac65-954353a6cb2f" />
+<img height="200" alt="image" src="https://github.com/user-attachments/assets/599062f7-a609-4620-a5b7-d5b4d2bf2872" />
+
 
