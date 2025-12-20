@@ -33,8 +33,9 @@ export function hideEyedropperPreviewGlobal() {
 if (!state.toolSettings) state.toolSettings = {};
 state.toolSettings.pen = state.toolSettings.pen || { size: 2, flow: 0.38, opacity: 1 };
 
-// local events restore snapshot
+// track local events to restore snapshot
 if (!state.strokePreviewBase) state.strokePreviewBase = {};
+if (!state.localPushedStrokes) state.localPushedStrokes = {};
 
 function clamp01(v) {
     return Math.max(0, Math.min(1, v));
@@ -302,6 +303,7 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
                 state.activeDrawingNotes.delete(id);
                 try {
                     // serialize stroke data instead of full canvas
+                    const strokeTimestamp = Date.now();
                     const stroke = {
                         points: endedPath,
                         tool: state.drawingMode,
@@ -309,8 +311,11 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
                         size: state.toolSettings?.[state.drawingMode]?.size || 2,
                         flow: state.toolSettings?.[state.drawingMode]?.flow || 0.38,
                         opacity: state.toolSettings?.[state.drawingMode]?.opacity || 1,
-                        timestamp: Date.now()
+                        timestamp: strokeTimestamp
                     };
+                    // track
+                    if (!state.localPushedStrokes[id]) state.localPushedStrokes[id] = new Set();
+                    state.localPushedStrokes[id].add(strokeTimestamp);
                     // send stroke event to firebase
                     notesRef.child(id).child('strokes').push(stroke);
                     saveToHistory(id, canvas);
@@ -430,10 +435,17 @@ export function listenForDrawingUpdates(notesRef, noteId, canvas) {
         const strokeId = snapshot.key;
         const stroke = snapshot.val();
         
-        if (!state.appliedStrokes[noteId].has(strokeId)) {
-            state.appliedStrokes[noteId].add(strokeId);
-            applyStroke(canvas, stroke, noteId);
+
+        if (state.appliedStrokes[noteId].has(strokeId)) return;
+        state.appliedStrokes[noteId].add(strokeId);
+        
+        const localStrokes = state.localPushedStrokes && state.localPushedStrokes[noteId];
+        if (localStrokes && stroke.timestamp && localStrokes.has(stroke.timestamp)) {
+            localStrokes.delete(stroke.timestamp);
+            return;
         }
+        
+        applyStroke(canvas, stroke, noteId);
     });
     
     // listen for text updates 
