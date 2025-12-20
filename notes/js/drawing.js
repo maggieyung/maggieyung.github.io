@@ -535,8 +535,6 @@ export function undo(noteId, notesRef) {
         img.src = previous;
     }
 
-    // update firebase 
-    notesRef.child(noteId).update({ type: 'draw', data: previous, updatedAt: Date.now() });
 }
 
 export function redo(noteId, notesRef) {
@@ -560,8 +558,6 @@ export function redo(noteId, notesRef) {
         img.src = next;
     }
 
-    // update firebase 
-    notesRef.child(noteId).update({ type: 'draw', data: next, updatedAt: Date.now() });
 }
 
 function getPos(ev, canvas) {

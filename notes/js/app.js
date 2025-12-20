@@ -497,12 +497,9 @@ function flipCanvasHorizontally(noteId, notesRef) {
     ctx.drawImage(tempCanvas, -canvas.width, 0);
     ctx.restore();
     
-    // save firebase and history
+    // save local snapshot
     try {
         const url = canvas.toDataURL('image/png');
-        notesRef.child(noteId).update({ type: 'draw', data: url });
-        
-        // add to undo history
         if (!state.undoHistory[noteId]) state.undoHistory[noteId] = [];
         state.undoHistory[noteId].push(url);
         if (state.undoHistory[noteId].length > state.maxHistorySize) {
