@@ -43,6 +43,33 @@ notesRef.on('child_added', (snapshot) => {
     }
 });
 
+notesRef.on('child_changed', (snapshot) => {
+    const noteData = snapshot.val();
+    const noteId = snapshot.key;
+    if (!noteData || !noteId) return;
+
+    const noteEl = document.querySelector(`[data-id="${noteId}"]`);
+    if (!noteEl) return;
+
+    const isLocalResize = state.isResizing && state.resizeState?.id === noteId;
+    const isLocalMove = state.moveModeEnabled && state.moveModeNoteId === noteId;
+    const isLocalDrawing = state.activeDrawingNotes && state.activeDrawingNotes.has(noteId);
+    if (isLocalResize || isLocalMove || isLocalDrawing) return;
+
+    const hasX = typeof noteData.x === 'number';
+    const hasY = typeof noteData.y === 'number';
+    if (hasX) noteEl.style.left = noteData.x + 'px';
+    if (hasY) noteEl.style.top = noteData.y + 'px';
+
+    const hasW = typeof noteData.w === 'number';
+    const hasH = typeof noteData.h === 'number';
+    if (hasW || hasH) {
+        const w = hasW ? noteData.w : (parseInt(noteEl.style.width, 10) || NOTE_W);
+        const h = hasH ? noteData.h : (parseInt(noteEl.style.height, 10) || NOTE_H);
+        applySize(noteEl, w, h);
+    }
+});
+
 notesRef.on('child_removed', (snapshot) => {
     const noteId = snapshot.key;
     const noteEl = document.querySelector(`[data-id="${noteId}"]`); // find note element
@@ -79,6 +106,24 @@ imagesRef.on('child_added', (snapshot) => {
         imagesRef
     );
     board.appendChild(imageEl);
+});
+
+imagesRef.on('child_changed', (snapshot) => {
+    const imageData = snapshot.val();
+    const imageId = snapshot.key;
+    if (!imageData || !imageId) return;
+
+    const imageEl = document.querySelector(`[data-image-id="${imageId}"]`);
+    if (!imageEl) return;
+
+    const isLocalResize = state.resizeModeEnabled && state.resizeModeNoteId === imageId;
+    const isLocalMove = state.moveModeEnabled && state.moveModeNoteId === imageId;
+    if (isLocalResize || isLocalMove) return;
+
+    if (typeof imageData.x === 'number') imageEl.style.left = imageData.x + 'px';
+    if (typeof imageData.y === 'number') imageEl.style.top = imageData.y + 'px';
+    if (typeof imageData.w === 'number') imageEl.style.width = imageData.w + 'px';
+    if (typeof imageData.h === 'number') imageEl.style.height = imageData.h + 'px';
 });
 
 imagesRef.on('child_removed', (snapshot) => {

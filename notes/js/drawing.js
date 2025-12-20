@@ -374,46 +374,117 @@ function applyStroke(canvas, stroke, noteId) {
     const tool = stroke.tool || 'pen';
     const color = stroke.color || '#000000';
     const size = stroke.size || 2;
-    const flow = stroke.flow || 0.38;
-    const opacity = stroke.opacity || 1;
-    
-    ctx.save();
-    ctx.globalAlpha = clamp01(opacity);
-    ctx.globalCompositeOperation = (tool === 'eraser') ? 'destination-out' : 'source-over';
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = (tool === 'eraser') ? 'rgba(0,0,0,1)' : color;
-    
+    const flow = clamp01(stroke.flow || 0.38);
+    const opacity = clamp01(stroke.opacity || 1);
     const points = stroke.points;
-    if (points.length === 1) {
-        const p = points[0];
-        const pressure = applyPressureCurve(p.pressure || 1.0);
-        const w = Math.max(0.1, size * pressure);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, w / 2, 0, Math.PI * 2);
-        ctx.fillStyle = (tool === 'eraser') ? 'rgba(0,0,0,1)' : color;
-        ctx.fill();
-    } else {
-        for (let i = 0; i < points.length - 1; i++) {
-            const p1 = points[i];
-            const p2 = points[i + 1];
-            const pressure1 = applyPressureCurve(p1.pressure || 1.0);
-            const pressure2 = applyPressureCurve(p2.pressure || 1.0);
-            const width1 = Math.max(0.1, size * pressure1);
-            const width2 = Math.max(0.1, size * pressure2);
-            const avgWidth = (width1 + width2) / 2;
-            ctx.lineWidth = avgWidth;
-            if (i === 0) { ctx.beginPath(); ctx.moveTo(p1.x, p1.y); }
-            if (i < points.length - 2) {
-                const xc = (p2.x + points[i + 2].x) / 2;
-                const yc = (p2.y + points[i + 2].y) / 2;
-                ctx.quadraticCurveTo(p2.x, p2.y, xc, yc);
-            } else {
-                ctx.lineTo(p2.x, p2.y);
+    
+    // use offscreen canvas for flow-based rendering
+    if (!applyStroke._strokeCanvas) {
+        applyStroke._strokeCanvas = document.createElement('canvas');
+    }
+    const strokeCanvas = applyStroke._strokeCanvas;
+    if (strokeCanvas.width !== canvas.width || strokeCanvas.height !== canvas.height) {
+        strokeCanvas.width = canvas.width;
+        strokeCanvas.height = canvas.height;
+    }
+    const strokeCtx = strokeCanvas.getContext('2d', { alpha: true });
+    strokeCtx.clearRect(0, 0, strokeCanvas.width, strokeCanvas.height);
+    strokeCtx.imageSmoothingEnabled = true;
+    strokeCtx.imageSmoothingQuality = 'high';
+    strokeCtx.lineCap = 'round';
+    strokeCtx.lineJoin = 'round';
+
+    // pencil brush rendering with flow
+    if (tool === 'pencil' && pencilBrushLoaded) {
+        const maxBrushSize = 128;
+        if (!applyStroke._offCanvas) {
+            applyStroke._offCanvas = document.createElement('canvas');
+            applyStroke._offCanvas.width = maxBrushSize;
+            applyStroke._offCanvas.height = maxBrushSize;
+        }
+        const offCanvas = applyStroke._offCanvas;
+        const offCtx = offCanvas.getContext('2d');
+
+        const step = Math.max(0.2, size * 0.15);
+        let prev = points[0];
+        for (let i = 1; i < points.length; i++) {
+            const curr = points[i];
+            const dx = curr.x - prev.x;
+            const dy = curr.y - prev.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist === 0) continue;
+            const count = Math.max(1, Math.ceil(dist / step));
+            const stampAlpha = 1 - Math.pow(1 - flow, 1 / count);
+            for (let j = 0; j <= count; j++) {
+                const t = count === 0 ? 1 : j / count;
+                const x = prev.x + dx * t;
+                const y = prev.y + dy * t;
+                const pressureInterp = prev.pressure + (curr.pressure - prev.pressure) * t;
+                const curvedPressure = applyPressureCurve(pressureInterp);
+                const brushSize = Math.max(0.1, size * curvedPressure);
+
+                if (offCanvas.width !== Math.ceil(brushSize) || offCanvas.height !== Math.ceil(brushSize)) {
+                    offCanvas.width = Math.ceil(brushSize);
+                    offCanvas.height = Math.ceil(brushSize);
+                }
+                offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
+                offCtx.drawImage(pencilBrushImg, 0, 0, offCanvas.width, offCanvas.height);
+
+                offCtx.globalCompositeOperation = 'source-in';
+                offCtx.fillStyle = color;
+                offCtx.globalAlpha = 1;
+                offCtx.fillRect(0, 0, offCanvas.width, offCanvas.height);
+                offCtx.globalCompositeOperation = 'source-over';
+
+                strokeCtx.save();
+                strokeCtx.globalAlpha = clamp01(stampAlpha);
+                strokeCtx.translate(x, y);
+                strokeCtx.drawImage(offCanvas, -brushSize / 2, -brushSize / 2, brushSize, brushSize);
+                strokeCtx.restore();
             }
-            ctx.stroke();
+            prev = curr;
+        }
+    } else {
+        // pen/eraser rendering with flow
+        strokeCtx.globalCompositeOperation = 'source-over';
+        strokeCtx.strokeStyle = (tool === 'eraser') ? 'rgba(0,0,0,1)' : color;
+        strokeCtx.globalAlpha = flow;
+        
+        if (points.length < 2) {
+            const curvedPressure = applyPressureCurve(points[0].pressure || 1.0);
+            const w = Math.max(0.1, size * curvedPressure);
+            strokeCtx.beginPath();
+            strokeCtx.arc(points[0].x, points[0].y, w / 2, 0, Math.PI * 2);
+            strokeCtx.fillStyle = (tool === 'eraser') ? 'rgba(0,0,0,1)' : color;
+            strokeCtx.fill();
+        } else {
+            for (let i = 0; i < points.length - 1; i++) {
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                const pressure1 = applyPressureCurve(p1.pressure || 1.0);
+                const pressure2 = applyPressureCurve(p2.pressure || 1.0);
+                const width1 = Math.max(0.1, size * pressure1);
+                const width2 = Math.max(0.1, size * pressure2);
+                const avgWidth = (width1 + width2) / 2;
+                strokeCtx.lineWidth = avgWidth;
+                if (i === 0) { strokeCtx.beginPath(); strokeCtx.moveTo(p1.x, p1.y); }
+                if (i < points.length - 2) {
+                    const xc = (p2.x + points[i + 2].x) / 2;
+                    const yc = (p2.y + points[i + 2].y) / 2;
+                    strokeCtx.quadraticCurveTo(p2.x, p2.y, xc, yc);
+                } else {
+                    strokeCtx.lineTo(p2.x, p2.y);
+                }
+                strokeCtx.stroke();
+            }
         }
     }
+
+    // composite stroke onto main canvas with opacity
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.globalCompositeOperation = (tool === 'eraser') ? 'destination-out' : 'source-over';
+    ctx.drawImage(strokeCanvas, 0, 0);
     ctx.restore();
 
     // update preview base for ongoing updates
