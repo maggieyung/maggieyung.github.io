@@ -1,5 +1,9 @@
 import { state } from './state.js';
 
+// draw updates
+if (!state.pendingDrawMerges) state.pendingDrawMerges = {};
+if (!state.lastAppliedDrawTs) state.lastAppliedDrawTs = {};
+
 // global eyedropper preview
 let globalEyedropperPreview = document.getElementById('eyedropperPreviewCircle');
 if (!globalEyedropperPreview) {
@@ -290,12 +294,14 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
             if (state.drawSaveTimeouts[id]) clearTimeout(state.drawSaveTimeouts[id]);
             state.drawSaveTimeouts[id] = setTimeout(() => {
                 state.activeDrawingNotes.delete(id);
-                try {
-                    const url = canvas.toDataURL('image/png');
-                    notesRef.child(id).update({ type: 'draw', data: url });
-                    saveToHistory(id, canvas);
-                } catch (_) {}
-                delete state.drawSaveTimeouts[id];
+                mergePendingRemote(id, canvas, () => {
+                    try {
+                        const url = canvas.toDataURL('image/png');
+                        notesRef.child(id).update({ type: 'draw', data: url, updatedAt: Date.now() });
+                        saveToHistory(id, canvas);
+                    } catch (_) {}
+                    delete state.drawSaveTimeouts[id];
+                });
             }, 300);
         };
         
@@ -471,4 +477,36 @@ function getPos(ev, canvas) {
         x: (ev.clientX - r.left) / zoom,
         y: (ev.clientY - r.top) / zoom
     };
+}
+
+// pending remote strokes
+function mergePendingRemote(noteId, canvas, done) {
+    const pending = state.pendingDrawMerges && state.pendingDrawMerges[noteId];
+    if (!pending || !pending.data) {
+        if (done) done();
+        return;
+    }
+    try {
+        const img = new Image();
+        img.onload = () => {
+            const w = canvas.width;
+            const h = canvas.height;
+            const off = document.createElement('canvas');
+            off.width = w;
+            off.height = h;
+            const octx = off.getContext('2d');
+            octx.drawImage(img, 0, 0, w, h);
+            octx.drawImage(canvas, 0, 0, w, h);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, w, h);
+            ctx.drawImage(off, 0, 0, w, h);
+            delete state.pendingDrawMerges[noteId];
+            if (done) done();
+        };
+        img.onerror = () => { delete state.pendingDrawMerges[noteId]; if (done) done(); };
+        img.src = pending.data;
+    } catch (_) {
+        delete state.pendingDrawMerges[noteId];
+        if (done) done();
+    }
 }
