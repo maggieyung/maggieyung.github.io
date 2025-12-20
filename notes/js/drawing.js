@@ -33,6 +33,9 @@ export function hideEyedropperPreviewGlobal() {
 if (!state.toolSettings) state.toolSettings = {};
 state.toolSettings.pen = state.toolSettings.pen || { size: 2, flow: 0.38, opacity: 1 };
 
+// local events restore snapshot
+if (!state.strokePreviewBase) state.strokePreviewBase = {};
+
 function clamp01(v) {
     return Math.max(0, Math.min(1, v));
 }
@@ -131,6 +134,7 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
             state.redoHistory[id] = [];
             // current canvas state 
             savedCanvas = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            state.strokePreviewBase[id] = savedCanvas;
             currentPath = [{ x: p.x, y: p.y, pressure }];
         };
         
@@ -148,7 +152,11 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
             currentPath.push({ x: p.x, y: p.y, pressure });
 
             // restore canvas to saved state
-            if (savedCanvas) ctx.putImageData(savedCanvas, 0, 0);
+            const base = state.strokePreviewBase[id] || savedCanvas;
+            if (base) {
+                savedCanvas = base;
+                ctx.putImageData(base, 0, 0);
+            }
 
             //  pencil size
             let tool = state.toolSettings?.[state.drawingMode] || { size: 1, flow: 1, opacity: 1 };
@@ -287,6 +295,7 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
             const endedPath = [...currentPath];
             currentPath = [];
             savedCanvas = null;
+            delete state.strokePreviewBase[id];
 
             if (state.drawSaveTimeouts[id]) clearTimeout(state.drawSaveTimeouts[id]);
             state.drawSaveTimeouts[id] = setTimeout(() => {
@@ -354,7 +363,7 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
 }
 
 // apply stroke to canvas
-function applyStroke(canvas, stroke) {
+function applyStroke(canvas, stroke, noteId) {
     if (!stroke || !stroke.points || stroke.points.length === 0) return;
     const ctx = canvas.getContext('2d');
     const tool = stroke.tool || 'pen';
@@ -401,6 +410,14 @@ function applyStroke(canvas, stroke) {
         }
     }
     ctx.restore();
+
+    // update preview base for ongoing updates
+    if (noteId && state.strokePreviewBase && state.strokePreviewBase[noteId]) {
+        try {
+            state.strokePreviewBase[noteId] = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        } catch (_) {
+        }
+    }
 }
 
 export function listenForDrawingUpdates(notesRef, noteId, canvas) {
@@ -415,7 +432,7 @@ export function listenForDrawingUpdates(notesRef, noteId, canvas) {
         
         if (!state.appliedStrokes[noteId].has(strokeId)) {
             state.appliedStrokes[noteId].add(strokeId);
-            applyStroke(canvas, stroke);
+            applyStroke(canvas, stroke, noteId);
         }
     });
     
