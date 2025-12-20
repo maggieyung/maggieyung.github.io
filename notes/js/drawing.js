@@ -1,5 +1,42 @@
 import { state } from './state.js';
 
+// global eyedropper preview
+let globalEyedropperPreview = document.getElementById('eyedropperPreviewCircle');
+if (!globalEyedropperPreview) {
+    globalEyedropperPreview = document.createElement('div');
+    globalEyedropperPreview.id = 'eyedropperPreviewCircle';
+    globalEyedropperPreview.className = 'eyedropper-preview';
+    globalEyedropperPreview.style.display = 'none';
+    globalEyedropperPreview.style.position = 'fixed';
+    globalEyedropperPreview.style.zIndex = '10001';
+    document.body.appendChild(globalEyedropperPreview);
+}
+
+// 3D objects
+export function showEyedropperPreviewGlobal(x, y, color) {
+    if (!globalEyedropperPreview) return;
+    const offsetX = 20;
+    const offsetY = -36;
+    globalEyedropperPreview.style.left = (x + offsetX) + 'px';
+    globalEyedropperPreview.style.top = (y + offsetY) + 'px';
+    globalEyedropperPreview.style.background = color;
+    globalEyedropperPreview.style.display = 'block';
+}
+
+export function hideEyedropperPreviewGlobal() {
+    if (!globalEyedropperPreview) return;
+    globalEyedropperPreview.style.display = 'none';
+}
+
+
+// default pen tool settings
+if (!state.toolSettings) state.toolSettings = {};
+state.toolSettings.pen = state.toolSettings.pen || { size: 2, flow: 0.38, opacity: 1 };
+
+function clamp01(v) {
+    return Math.max(0, Math.min(1, v));
+}
+
 // pressure curve function
 function applyPressureCurve(pressure) {
     const amount = state.pressureCurveAmount || 1.2;
@@ -64,20 +101,11 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
         document.addEventListener('keydown', handleUndoRedoDuringStroke);
 
         // eyedropper preview circle 
-        const eyedropperPreview = document.getElementById('eyedropperPreviewCircle');
         function showEyedropperPreview(x, y, color) {
-            if (!eyedropperPreview) return;
-            // offset preview settings
-            const offsetX = 20;
-            const offsetY = -36;
-            eyedropperPreview.style.left = (x + offsetX) + 'px';
-            eyedropperPreview.style.top = (y + offsetY) + 'px';
-            eyedropperPreview.style.background = color;
-            eyedropperPreview.style.display = 'block';
+            showEyedropperPreviewGlobal(x, y, color);
         }
         function hideEyedropperPreview() {
-            if (!eyedropperPreview) return;
-            eyedropperPreview.style.display = 'none';
+            hideEyedropperPreviewGlobal();
         }
 
         const start = (ev) => {
@@ -93,6 +121,7 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
                 state.drawingMode = 'pen';
                 document.body.style.cursor = '';
                 hideEyedropperPreview();
+                window.dispatchEvent(new CustomEvent('eyedropperColorSelected'));
                 return;
             }
             drawing = true;
@@ -131,19 +160,35 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
             }
 
             if (state.drawingMode === 'eraser') {
-                ctx.globalCompositeOperation = 'destination-out';
                 ctx.strokeStyle = 'rgba(0,0,0,1)';
             } else {
-                ctx.globalCompositeOperation = 'source-over';
                 ctx.strokeStyle = state.brushColor;
             }
-            ctx.globalAlpha = Math.max(0, Math.min(1, tool.flow * tool.opacity));
+            const opacity = clamp01(tool.opacity);
+            const flow = clamp01(tool.flow);
 
-            //anti-aliased
+            // offscreen buffer
+            if (!move._strokeCanvas) {
+                move._strokeCanvas = document.createElement('canvas');
+                move._strokeCanvas.width = canvas.width;
+                move._strokeCanvas.height = canvas.height;
+            }
+            const strokeCanvas = move._strokeCanvas;
+            if (strokeCanvas.width !== canvas.width || strokeCanvas.height !== canvas.height) {
+                strokeCanvas.width = canvas.width;
+                strokeCanvas.height = canvas.height;
+            }
+            const strokeCtx = strokeCanvas.getContext('2d', { alpha: true });
+            strokeCtx.clearRect(0, 0, strokeCanvas.width, strokeCanvas.height);
+            strokeCtx.imageSmoothingEnabled = true;
+            strokeCtx.imageSmoothingQuality = 'high';
+            strokeCtx.lineCap = 'round';
+            strokeCtx.lineJoin = 'round';
+
+            // anti-aliased 
             if (state.drawingMode === 'pencil' && pencilBrushLoaded) {
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
                 // single offscreen canvas for tinting
+
                 const maxBrushSize = 128; //
                 if (!move._offCanvas) {
                     move._offCanvas = document.createElement('canvas');
@@ -162,6 +207,7 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
                     const dist = Math.hypot(dx, dy);
                     if (dist === 0) continue;
                     const count = Math.max(1, Math.ceil(dist / step));
+                    const stampAlpha = 1 - Math.pow(1 - flow, 1 / count);
                     for (let j = 0; j <= count; j++) {
                         const t = count === 0 ? 1 : j / count;
                         const x = prev.x + dx * t;
@@ -185,21 +231,26 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
                         offCtx.fillRect(0, 0, offCanvas.width, offCanvas.height);
                         offCtx.globalCompositeOperation = 'source-over';
 
-                        ctx.save();
-                        ctx.globalAlpha = Math.max(0, Math.min(1, tool.flow * tool.opacity));
-                        ctx.translate(x, y);
-                        ctx.drawImage(offCanvas, -size / 2, -size / 2, size, size);
-                        ctx.restore();
+                        strokeCtx.save();
+                        strokeCtx.globalAlpha = clamp01(stampAlpha);
+                        strokeCtx.translate(x, y);
+                        strokeCtx.drawImage(offCanvas, -size / 2, -size / 2, size, size);
+                        strokeCtx.restore();
                     }
                     prev = curr;
                 }
             } else {
+                strokeCtx.globalCompositeOperation = 'source-over';
+                strokeCtx.strokeStyle = (state.drawingMode === 'eraser') ? 'rgba(0,0,0,1)' : state.brushColor;
+                strokeCtx.globalAlpha = flow;
+                
                 if (currentPath.length < 2) {
                     const curvedPressure = applyPressureCurve(currentPath[0].pressure ?? pressure);
                     const size = Math.max(0.1, tool.size * curvedPressure);
-                    ctx.beginPath();
-                    ctx.arc(currentPath[0].x, currentPath[0].y, size / 2, 0, Math.PI * 2);
-                    ctx.fill();
+                    strokeCtx.beginPath();
+                    strokeCtx.arc(currentPath[0].x, currentPath[0].y, size / 2, 0, Math.PI * 2);
+                    strokeCtx.fillStyle = (state.drawingMode === 'eraser') ? 'rgba(0,0,0,1)' : state.brushColor;
+                    strokeCtx.fill();
                 } else {
                     for (let i = 0; i < currentPath.length - 1; i++) {
                         const p1 = currentPath[i];
@@ -209,22 +260,25 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
                         const width1 = Math.max(0.1, tool.size * pressure1);
                         const width2 = Math.max(0.1, tool.size * pressure2);
                         const avgWidth = (width1 + width2) / 2;
-                        ctx.lineWidth = avgWidth;
-                        if (i === 0) { ctx.beginPath(); ctx.moveTo(p1.x, p1.y); }
+                        strokeCtx.lineWidth = avgWidth;
+                        if (i === 0) { strokeCtx.beginPath(); strokeCtx.moveTo(p1.x, p1.y); }
                         if (i < currentPath.length - 2) {
                             const xc = (p2.x + currentPath[i + 2].x) / 2;
                             const yc = (p2.y + currentPath[i + 2].y) / 2;
-                            ctx.quadraticCurveTo(p2.x, p2.y, xc, yc);
+                            strokeCtx.quadraticCurveTo(p2.x, p2.y, xc, yc);
                         } else {
-                            ctx.lineTo(p2.x, p2.y);
+                            strokeCtx.lineTo(p2.x, p2.y);
                         }
-                        ctx.stroke();
+                        strokeCtx.stroke();
                     }
                 }
             }
 
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.globalAlpha = 1;
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            ctx.globalCompositeOperation = (state.drawingMode === 'eraser') ? 'destination-out' : 'source-over';
+            ctx.drawImage(strokeCanvas, 0, 0);
+            ctx.restore();
         };
         
         const end = () => {

@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="js/firebase.js"></script>
 </head>
 <body>
@@ -81,18 +82,28 @@
     <div class="shortcuts-popup" id="shortcutsPopup" style="display: none;">
         <button class="shortcuts-close" id="shortcutsClose">x</button>
         <div class="shortcuts-content">
+            <br>
             <strong><u>keyboard shortcuts</u></strong><br><br>
             
-            b - pen<br>
-            p - pencil<br>
-            e - eraser<br>
+            [b] - pen<br>
+            [p] - pencil<br>
+            [e] - eraser<br>
             <br>
-            n - new text note<br>
-            d - new paint note<br>
+            [ctrl/cmd + z] - undo<br>
+            [ctrl/cmd + y] - redo <br>
+            [h] - flip horizontally <br>
             <br>
-            h - flip note horizontally<br>
-            ctrl/cmd + z - undo<br>
-            ctrl/cmd + y - redo
+            [n] - new text note<br>
+            [d] - new paint note<br>
+
+            [i] - new image note<br>
+            <br>
+            [MB2] - menu <br>
+            [shift + MB1] - rotate 3D view<br>
+            <br>
+
+            drag note corners to resize<br>
+            <br>
         </div>
     </div>
 

@@ -37,6 +37,10 @@ function updateTransform() {
     wb.style.transformOrigin = '0 0';
     wb.style.transform = `translate(${currentX}px, ${currentY}px) scale(${currentScale})`;
     state.zoom = currentScale;
+    // current pan/zoom for collaborators
+    window.whiteboardTransform = { scale: currentScale, tx: currentX, ty: currentY };
+    window.whiteboardZoom = currentScale;
+    window.dispatchEvent(new Event('zoomchange'));
     refreshMinimap();
 }
 

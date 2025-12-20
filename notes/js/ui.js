@@ -1,4 +1,14 @@
 import { state } from './state.js';
+
+let colorPickerMode = 'brush';
+let colorPickerContext = null;
+
+export function openBaseColorPicker(options) {
+    if (typeof window.__openBaseColorPicker === 'function') {
+        window.__openBaseColorPicker(options);
+    }
+}
+
 export function initToolbar() {
     const penBtn = document.getElementById('penBtn');
     const pencilBtn = document.getElementById('pencilBtn');
@@ -151,11 +161,51 @@ export function initToolbar() {
 }
 
 function initCustomColorPicker() {
+    const setPickerMode = (mode, ctx = null) => {
+        colorPickerMode = mode;
+        colorPickerContext = ctx;
+    };
+
     // color eyedropper preview 
     const eyeDropperColor = document.getElementById('eyeDropperColor');
     function updateEyeDropperPreview(color) {
         if (eyeDropperColor) eyeDropperColor.style.background = color || '#fff';
     }
+    function hexToHSL(H) {
+        let r = 0, g = 0, b = 0;
+        if (!H) return { h: 0, s: 0, l: 0 };
+        if (H.length === 4) {
+            r = "0x" + H[1] + H[1];
+            g = "0x" + H[2] + H[2];
+            b = "0x" + H[3] + H[3];
+        } else if (H.length === 7) {
+            r = "0x" + H[1] + H[2];
+            g = "0x" + H[3] + H[4];
+            b = "0x" + H[5] + H[6];
+        }
+        r = +r; g = +g; b = +b;
+        r /= 255; g /= 255; b /= 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+        if (max === min) {
+            h = s = 0;
+        } else {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        }
+        return {
+            h: Math.round(h * 360),
+            s: Math.round(s * 100),
+            l: Math.round(l * 100)
+        };
+    }
+
     updateEyeDropperPreview(state.brushColor);
     // brush color changes
     window.addEventListener('brushColorChange', (e) => {
@@ -164,40 +214,6 @@ function initCustomColorPicker() {
         if (typeof e.detail === 'string') {
             const hex = e.detail;
             if (colorPreview) colorPreview.style.backgroundColor = hex;
-            // convert hex to HSL
-            function hexToHSL(H) {
-                let r = 0, g = 0, b = 0;
-                if (H.length === 4) {
-                    r = "0x" + H[1] + H[1];
-                    g = "0x" + H[2] + H[2];
-                    b = "0x" + H[3] + H[3];
-                } else if (H.length === 7) {
-                    r = "0x" + H[1] + H[2];
-                    g = "0x" + H[3] + H[4];
-                    b = "0x" + H[5] + H[6];
-                }
-                r = +r; g = +g; b = +b;
-                r /= 255; g /= 255; b /= 255;
-                const max = Math.max(r, g, b), min = Math.min(r, g, b);
-                let h, s, l = (max + min) / 2;
-                if (max === min) {
-                    h = s = 0;
-                } else {
-                    const d = max - min;
-                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-                    switch (max) {
-                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                        case g: h = (b - r) / d + 2; break;
-                        case b: h = (r - g) / d + 4; break;
-                    }
-                    h /= 6;
-                }
-                return {
-                    h: Math.round(h * 360),
-                    s: Math.round(s * 100),
-                    l: Math.round(l * 100)
-                };
-            }
             const hsl = hexToHSL(hex);
             if (!isNaN(hsl.h) && !isNaN(hsl.s) && !isNaN(hsl.l)) {
                 currentHue = hsl.h;
@@ -216,12 +232,30 @@ function initCustomColorPicker() {
     if (colorEyeDropperBtn) {
         colorEyeDropperBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            state.drawingMode = 'eyeDropper';
-            document.body.style.cursor = "url('../img/cursormini.png'), pointer";
-            colorEyeDropperBtn.style.opacity = '0.4';
+            if (state.drawingMode === 'eyeDropper') {
+                state.drawingMode = 'pen';
+                document.body.style.cursor = '';
+                colorEyeDropperBtn.style.opacity = '';
+                penBtn.classList.add('active');
+                pencilBtn.classList.remove('active');
+                eraserBtn.classList.remove('active');
+                syncSlidersFromTool();
+            } else {
+                state.drawingMode = 'eyeDropper';
+                document.body.style.cursor = "url('../img/cursormini.png'), pointer";
+                colorEyeDropperBtn.style.opacity = '0.4';
+                penBtn.classList.remove('active');
+                pencilBtn.classList.remove('active');
+                eraserBtn.classList.remove('active');
+            }
         });
-        window.addEventListener('brushColorChange', () => {
-            colorEyeDropperBtn.style.opacity = ''; // restore opacity
+        // reset eyedropper button when a color is selected
+        window.addEventListener('eyedropperColorSelected', () => {
+            colorEyeDropperBtn.style.opacity = '';
+            penBtn.classList.add('active');
+            pencilBtn.classList.remove('active');
+            eraserBtn.classList.remove('active');
+            syncSlidersFromTool();
         });
     }
     const colorSelector = document.getElementById('colorSelector');
@@ -284,6 +318,19 @@ function initCustomColorPicker() {
         updateRingIndicator();
     }
 
+    function syncPickerToHex(hex) {
+        const hsl = hexToHSL(hex || '#ffffff');
+        if (isNaN(hsl.h) || isNaN(hsl.s) || isNaN(hsl.l)) return;
+        currentHue = hsl.h;
+        currentSaturation = hsl.s;
+        currentLightness = hsl.l;
+        drawColorPicker(currentHue);
+        const halfSquare = squareSize / 2;
+        updateSquareIndicator(centerX + halfSquare * (currentSaturation / 100),
+                             centerY + halfSquare * (1 - currentLightness / 100));
+        updateRingIndicator();
+    }
+
     function updateRingIndicator() {
         const angle = (currentHue + 90) * Math.PI / 180;
         const radius = (innerRadius + outerRadius) / 2;
@@ -319,14 +366,22 @@ function initCustomColorPicker() {
         const dy = canvasY - centerY;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
+        const applyColor = (hex) => {
+            if (colorPickerMode === 'baseColor') {
+                if (colorPickerContext?.onSelect) colorPickerContext.onSelect(hex);
+            } else {
+                state.brushColor = hex;
+                if (colorPreview) colorPreview.style.backgroundColor = hex;
+            }
+        };
+
         if (distance >= innerRadius && distance <= outerRadius) {
             let hue = Math.atan2(dy, dx) * 180 / Math.PI - 90;
             if (hue < 0) hue += 360;
             currentHue = hue;
             drawColorPicker(currentHue);
             const hex = hslToHex(currentHue, currentSaturation, currentLightness);
-            state.brushColor = hex;
-            colorPreview.style.backgroundColor = hex;
+            applyColor(hex);
             return;
         }
         
@@ -339,8 +394,7 @@ function initCustomColorPicker() {
             currentSaturation = ((canvasX - squareX) / squareSize) * 100;
             currentLightness = 100 - ((canvasY - squareY) / squareSize) * 100;
             const hex = hslToHex(currentHue, currentSaturation, currentLightness);
-            state.brushColor = hex;
-            colorPreview.style.backgroundColor = hex;
+            applyColor(hex);
             updateSquareIndicator(canvasX, canvasY);
         }
     }
@@ -390,11 +444,13 @@ function initCustomColorPicker() {
 
     colorPickerClose.addEventListener('click', (e) => {
         e.stopPropagation();
+        setPickerMode('brush', null);
         colorPickerPopup.style.display = 'none';
     });
 
     colorSelector.addEventListener('click', (e) => {
         e.stopPropagation();
+        setPickerMode('brush', null);
         const isVisible = colorPickerPopup.style.display !== 'none';
         if (!isVisible) {
             const rect = colorSelector.getBoundingClientRect();
@@ -407,6 +463,18 @@ function initCustomColorPicker() {
         }
         colorPickerPopup.style.display = isVisible ? 'none' : 'block';
     });
+
+    window.__openBaseColorPicker = ({ anchorRect, initialColor, onSelect } = {}) => {
+        if (!colorPickerPopup) return;
+        setPickerMode('baseColor', { onSelect });
+        const rect = anchorRect;
+        if (rect) {
+            colorPickerPopup.style.left = rect.left + 'px';
+            colorPickerPopup.style.top = (rect.bottom + 5) + 'px';
+        }
+        if (initialColor) syncPickerToHex(initialColor);
+        colorPickerPopup.style.display = 'block';
+    };
 
     drawColorPicker(currentHue);
     const halfSquare = squareSize / 2;

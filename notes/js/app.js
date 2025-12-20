@@ -7,14 +7,18 @@ import { createNoteElement, applySize } from './manager.js';
 import { initResizeModeListener } from './resize.js';
 import { undo, redo } from './drawing.js';
 import { initZoom } from './zoom.js';
+import { cleanupCube } from './cube3d.js';
+import { cleanupStroke3D } from './stroke3d.js';
+import { cleanupSphere2D } from './sphere2d.js';
 
 const db = initFirebase();
 const notesRef = db.ref('notes');
+const imagesRef = db.ref('images');
 const board = document.getElementById('whiteboard');
 
 initToolbar();
 initBrushPreview();
-initContextMenu(notesRef, board);
+initContextMenu(notesRef, imagesRef, board);
 initResizeModeListener();
 initZoom();
 
@@ -38,6 +42,279 @@ notesRef.on('child_added', (snapshot) => {
         state.pendingFocusId = null;
     }
 });
+
+notesRef.on('child_removed', (snapshot) => {
+    const noteId = snapshot.key;
+    const noteEl = document.querySelector(`[data-id="${noteId}"]`); // find note element
+    if (noteEl) {
+        // cleanup cube / stroke3d / sphere
+        const noteType = noteEl.getAttribute('data-type');
+        if (noteType === 'cube') cleanupCube(noteId);
+        if (noteType === 'gstroke') cleanupStroke3D(noteId);
+        if (noteType === 'sphere2d') cleanupSphere2D(noteId);
+        
+        if (state.resizeModeEnabled && state.resizeModeNoteId === noteId) {
+            state.resizeModeEnabled = false;
+            state.resizeModeNoteId = null;
+            document.body.classList.remove('mini-cursor');
+        }
+        if (state.moveModeEnabled && state.moveModeNoteId === noteId) {
+            state.moveModeEnabled = false;
+            state.moveModeNoteId = null;
+        }
+        noteEl.remove();
+    }
+});
+
+// images listeners
+imagesRef.on('child_added', (snapshot) => {
+    const imageData = snapshot.val();
+    const imageEl = createImageElement(
+        imageData.data,
+        imageData.x,
+        imageData.y,
+        snapshot.key,
+        imageData.w || 200,
+        imageData.h || 200,
+        imagesRef
+    );
+    board.appendChild(imageEl);
+});
+
+imagesRef.on('child_removed', (snapshot) => {
+    const imageId = snapshot.key;
+    const imageEl = document.querySelector(`[data-image-id="${imageId}"]`);
+    if (imageEl) {
+        if (state.resizeModeEnabled && state.resizeModeNoteId === imageId) {
+            state.resizeModeEnabled = false;
+            state.resizeModeNoteId = null;
+            document.body.classList.remove('mini-cursor');
+        }
+        if (state.moveModeEnabled && state.moveModeNoteId === imageId) {
+            state.moveModeEnabled = false;
+            state.moveModeNoteId = null;
+        }
+        imageEl.remove();
+    }
+});
+
+function createImageElement(data, x, y, id, w, h, imagesRef) {
+    const imageContainer = document.createElement('div');
+    imageContainer.className = 'image-container';
+    imageContainer.style.left = x + 'px';
+    imageContainer.style.top = y + 'px';
+    imageContainer.style.width = w + 'px';
+    imageContainer.style.height = h + 'px';
+    imageContainer.setAttribute('data-image-id', id);
+
+    const img = document.createElement('img');
+    img.src = data;
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'contain';
+    img.draggable = false;
+    imageContainer.appendChild(img);
+
+    imageContainer.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        // dragging in move mode
+        if (!state.moveModeEnabled || state.moveModeNoteId !== id) {
+            e.preventDefault();
+            return;
+        }
+    });
+
+    // context menu 
+    imageContainer.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showImageContextMenu(e.clientX, e.clientY, id, imagesRef, imageContainer);
+    });
+
+    return imageContainer;
+}
+
+function enableImageResize(container, id, imagesRef) {
+    // existing handles
+    container.querySelectorAll('.image-resize-handle').forEach(h => h.remove());
+    
+    // resize handles
+    const handle = document.createElement('div');
+    handle.className = 'image-resize-handle';
+    container.appendChild(handle);
+    container.classList.add('resize-mode');
+
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
+
+    handle.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        isResizing = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startWidth = container.offsetWidth;
+        startHeight = container.offsetHeight;
+    });
+
+    const moveHandler = (e) => {
+        if (!isResizing) return;
+        const zoom = state.zoom || 1;
+        const dx = (e.clientX - startX) / zoom;
+        const dy = (e.clientY - startY) / zoom;
+        const newWidth = Math.max(50, startWidth + dx);
+        const newHeight = Math.max(50, startHeight + dy);
+        container.style.width = newWidth + 'px';
+        container.style.height = newHeight + 'px';
+    };
+
+    const upHandler = () => {
+        if (isResizing) {
+            isResizing = false;
+            const w = parseInt(container.style.width);
+            const h = parseInt(container.style.height);
+            imagesRef.child(id).update({ w, h });
+        }
+    };
+
+    document.addEventListener('mousemove', moveHandler);
+    document.addEventListener('mouseup', upHandler);
+}
+
+function showImageContextMenu(x, y, imageId, imagesRef, imageContainer) {
+    if (state.contextMenu) state.contextMenu.remove();
+
+    state.contextMenu = document.createElement('div');
+    state.contextMenu.className = 'context-menu';
+    state.contextMenu.style.left = x + 'px';
+    state.contextMenu.style.top = y + 'px';
+
+    const moveItem = document.createElement('div');
+    moveItem.className = 'context-menu-item';
+    moveItem.textContent = 'Move';
+    moveItem.onclick = (e) => {
+        e.stopPropagation();
+        
+        // clear active modes
+        document.querySelectorAll('.image-container.resize-mode').forEach(el => {
+            el.classList.remove('resize-mode');
+            el.querySelectorAll('.image-resize-handle').forEach(h => h.remove());
+        });
+        document.querySelectorAll('.image-container.dragging').forEach(el => {
+            el.classList.remove('dragging');
+        });
+        
+        if (state.resizeModeEnabled && state.resizeModeNoteId) {
+            const noteEl = document.querySelector(`[data-id="${state.resizeModeNoteId}"]`);
+            if (noteEl) {
+                noteEl.classList.remove('resize-mode');
+                noteEl.querySelectorAll('.resize-circle').forEach(c => c.remove());
+            }
+            state.resizeModeEnabled = false;
+        }
+        if (state.moveModeEnabled && state.moveModeNoteId) {
+            const noteEl = document.querySelector(`[data-id="${state.moveModeNoteId}"]`);
+            if (noteEl) noteEl.classList.remove('dragging');
+        }
+        
+        state.moveModeEnabled = true;
+        state.moveModeNoteId = imageId;
+        imageContainer.classList.add('dragging');
+        
+        const movePreview = (e) => {
+            if (state.moveModeNoteId !== imageId) return;
+            
+            const pos = screenToWhiteboard(e.clientX, e.clientY);
+            const newX = pos.x - imageContainer.offsetWidth / 2;
+            const newY = pos.y - imageContainer.offsetHeight / 2;
+            imageContainer.style.left = newX + 'px';
+            imageContainer.style.top = newY + 'px';
+        };
+        
+        const finalizeMove = (e) => {
+            if (state.moveModeNoteId !== imageId) return;
+            
+            const x = parseInt(imageContainer.style.left);
+            const y = parseInt(imageContainer.style.top);
+            imagesRef.child(imageId).update({ x, y });
+            imageContainer.classList.remove('dragging');
+            state.moveModeEnabled = false;
+            state.moveModeNoteId = null;
+            document.removeEventListener('mousemove', movePreview);
+            document.removeEventListener('click', finalizeMove);
+        };
+        
+        document.addEventListener('mousemove', movePreview);
+        setTimeout(() => {
+            document.addEventListener('click', finalizeMove);
+        }, 100);
+        
+        state.contextMenu.remove();
+        state.contextMenu = null;
+    };
+
+    const resizeItem = document.createElement('div');
+    resizeItem.className = 'context-menu-item';
+    resizeItem.textContent = 'Resize';
+    resizeItem.onclick = (e) => {
+        e.stopPropagation();
+        
+        // clear any other active resize modes
+        document.querySelectorAll('.image-container.resize-mode').forEach(el => {
+            el.classList.remove('resize-mode');
+            el.querySelectorAll('.image-resize-handle').forEach(h => h.remove());
+        });
+        
+        if (state.resizeModeEnabled && state.resizeModeNoteId) {
+            const noteEl = document.querySelector(`[data-id="${state.resizeModeNoteId}"]`);
+            if (noteEl) {
+                noteEl.classList.remove('resize-mode');
+                noteEl.querySelectorAll('.resize-circle').forEach(c => c.remove());
+            }
+        }
+        
+        state.resizeModeEnabled = true;
+        state.resizeModeNoteId = imageId;
+        enableImageResize(imageContainer, imageId, imagesRef);
+        
+        state.contextMenu.remove();
+        state.contextMenu = null;
+    };
+
+    const deleteItem = document.createElement('div');
+    deleteItem.className = 'context-menu-item';
+    deleteItem.textContent = 'Delete Image';
+    deleteItem.onclick = (e) => {
+        e.stopPropagation();
+        imagesRef.child(imageId).remove();
+        state.contextMenu.remove();
+        state.contextMenu = null;
+    };
+
+    state.contextMenu.appendChild(moveItem);
+    state.contextMenu.appendChild(resizeItem);
+    state.contextMenu.appendChild(deleteItem);
+    document.body.appendChild(state.contextMenu);
+}
+
+// save actions to history
+function saveAction(action) {
+    state.actionHistory.push(action);
+    if (state.actionHistory.length > (state.maxActionHistorySize || 50)) {
+        state.actionHistory.shift();
+    }
+    state.actionRedoHistory = [];
+}
+
+// convert screen coordinates to whiteboard coordinates
+function screenToWhiteboard(screenX, screenY) {
+    const wb = document.getElementById('whiteboard');
+    const rect = wb.getBoundingClientRect();
+    const zoom = state.zoom || 1;
+    return {
+        x: (screenX - rect.left) / zoom,
+        y: (screenY - rect.top) / zoom
+    };
+}
 
 document.addEventListener('keydown', (e) => {
     // ignore tool shortcuts if editing a text field
@@ -180,6 +457,22 @@ document.addEventListener('keydown', (e) => {
             noteId: noteId,
             noteData: noteData
         });
+    } else if (e.key === 'i' || e.key === 'I') {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.onchange = (evt) => {
+            const file = evt.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const newRef = imagesRef.push();
+                    newRef.set({ data: e.target.result, x, y, w: 200, h: 200 });
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        fileInput.click();
     }
 });
 
@@ -256,7 +549,7 @@ function performRedo() {
 }
 
 board.addEventListener('dblclick', (e) => {
-    if (e.target.classList.contains('note-text') || e.target.classList.contains('draw-canvas')) return;
+    if (e.target.classList.contains('note-text') || e.target.classList.contains('draw-canvas') || e.target.classList.contains('cube-canvas')) return;
     
     const pos = screenToWhiteboard(e.clientX, e.clientY);
     const x = pos.x - NOTE_W / 2;
@@ -284,13 +577,23 @@ document.addEventListener('mousedown', (e) => {
     }
 
     // exit resize mode
+    const clickedImage = e.target.closest('.image-container');
+    const clickedImageId = clickedImage ? clickedImage.getAttribute('data-image-id') : null;
+    
     if (state.resizeModeEnabled && 
         state.resizeModeNoteId !== clickedNoteId && 
-        !e.target.classList.contains('resize-circle')) {
+        state.resizeModeNoteId !== clickedImageId &&
+        !e.target.classList.contains('resize-circle') &&
+        !e.target.classList.contains('image-resize-handle')) {
         const noteEl = document.querySelector(`[data-id="${state.resizeModeNoteId}"]`);
         if (noteEl) {
             noteEl.classList.remove('resize-mode');
             noteEl.querySelectorAll('.resize-circle').forEach(c => c.remove());
+        }
+        const imageEl = document.querySelector(`[data-image-id="${state.resizeModeNoteId}"]`);
+        if (imageEl) {
+            imageEl.classList.remove('resize-mode');
+            imageEl.querySelectorAll('.image-resize-handle').forEach(h => h.remove());
         }
         state.resizeModeEnabled = false;
         state.resizeModeNoteId = null;
@@ -298,10 +601,14 @@ document.addEventListener('mousedown', (e) => {
     }
     
     // exit move mode
-    if (state.moveModeEnabled && state.moveModeNoteId !== clickedNoteId) {
+    if (state.moveModeEnabled && state.moveModeNoteId !== clickedNoteId && state.moveModeNoteId !== clickedImageId) {
         const noteEl = document.querySelector(`[data-id="${state.moveModeNoteId}"]`);
         if (noteEl) {
             noteEl.classList.remove('dragging');
+        }
+        const imageEl = document.querySelector(`[data-image-id="${state.moveModeNoteId}"]`);
+        if (imageEl) {
+            imageEl.classList.remove('dragging');
         }
         state.moveModeEnabled = false;
         state.moveModeNoteId = null;

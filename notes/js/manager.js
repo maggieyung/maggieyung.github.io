@@ -3,6 +3,9 @@ import { NOTE_W, NOTE_H } from './constants.js';
 import { showContextMenu } from './menu.js';
 import { setupDrawingCanvas } from './drawing.js';
 import { attachEdgeInteractions, startResize, getEdge } from './resize.js';
+import { setupCubeCanvas } from './cube3d.js';
+import { setupStroke3D } from './stroke3d.js';
+import { setupSphere2D } from './sphere2d.js';
 
 export function createNoteElement(text, x, y, id, type = 'text', data = '', ts = Date.now(), notesRef) {
     const note = document.createElement('div');
@@ -35,6 +38,37 @@ export function createNoteElement(text, x, y, id, type = 'text', data = '', ts =
         note.appendChild(canvas);
         setupDrawingCanvas(canvas, id, data, notesRef);
         setupDrawNoteInteractions(note);
+    } else if (type === 'cube') {
+        note.setAttribute('data-type', 'cube');
+        const canvas = document.createElement('canvas');
+        canvas.className = 'cube-canvas';
+        note.appendChild(canvas);
+
+        setTimeout(() => setupCubeCanvas(note, id, data, notesRef), 10);
+        setupDrawNoteInteractions(note);
+    } else if (type === 'gstroke') {
+        note.setAttribute('data-type', 'gstroke');
+        const canvas = document.createElement('canvas');
+        canvas.className = 'gstroke-canvas';
+        note.appendChild(canvas);
+        setTimeout(() => setupStroke3D(note, id, data, notesRef), 10);
+        setupDrawNoteInteractions(note);
+    } else if (type === 'sphere2d') {
+        note.setAttribute('data-type', 'sphere2d');
+        const canvas = document.createElement('canvas');
+        canvas.className = 'sphere2d-canvas';
+        note.appendChild(canvas);
+        setTimeout(() => setupSphere2D(note, id, data, notesRef), 10);
+        setupDrawNoteInteractions(note);
+    } else if (type === 'image') {
+        note.setAttribute('data-type', 'image');
+        const img = document.createElement('img');
+        img.className = 'note-image';
+        img.src = data;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        note.appendChild(img);
     }
 
     setupNoteInteractions(note, id, notesRef);

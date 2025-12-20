@@ -1,8 +1,28 @@
 import { state } from './state.js';
 import { NOTE_W, NOTE_H } from './constants.js';
+import { setCubeBaseColor } from './cube3d.js';
+import { setSphereBaseColor } from './sphere2d.js';
+import { openBaseColorPicker } from './ui.js';
 
 let globalNotesRef = null;
+let globalImagesRef = null;
 let globalBoard = null;
+
+function applyBaseColor(noteId, noteType, colorHex) {
+    if (!globalNotesRef) return;
+    const ref = globalNotesRef.child(noteId);
+    ref.once('value', (snap) => {
+        const val = snap.val() || {};
+        let dataObj = {};
+        if (val.data) {
+            try { dataObj = JSON.parse(val.data) || {}; } catch (e) { dataObj = {}; }
+        }
+        dataObj.baseColor = colorHex;
+        ref.update({ data: JSON.stringify(dataObj) });
+        if (noteType === 'cube') setCubeBaseColor(noteId, colorHex);
+        if (noteType === 'sphere2d') setSphereBaseColor(noteId, colorHex);
+    });
+}
 
 // screen coords to whiteboard content
 function screenToWhiteboard(screenX, screenY) {
@@ -15,8 +35,9 @@ function screenToWhiteboard(screenX, screenY) {
     };
 }
 
-export function initContextMenu(notesRef, board) {
+export function initContextMenu(notesRef, imagesRef, board) {
     globalNotesRef = notesRef;
+    globalImagesRef = imagesRef;
     globalBoard = board;
     
     // context menu on page
@@ -78,8 +99,92 @@ export function showBoardContextMenu(x, y) {
         state.contextMenu = null;
     };
 
-    state.contextMenu.appendChild(textNoteItem);
-    state.contextMenu.appendChild(paintNoteItem);
+    const imageNoteItem = document.createElement('div');
+    imageNoteItem.className = 'context-menu-item';
+    imageNoteItem.textContent = 'Insert Image';
+    imageNoteItem.onclick = (e) => {
+        e.stopPropagation();
+        const pos = screenToWhiteboard(x, y);
+        const imgX = pos.x - 100;
+        const imgY = pos.y - 100;
+        
+        // create file input
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.onchange = (evt) => {
+            const file = evt.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const newRef = globalImagesRef.push();
+                    newRef.set({ data: e.target.result, x: imgX, y: imgY, w: 200, h: 200 });
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        fileInput.click();
+        
+        state.contextMenu.remove();
+        state.contextMenu = null;
+    };
+
+        const stroke3DItem = document.createElement('div');
+        stroke3DItem.className = 'context-menu-item';
+        stroke3DItem.textContent = 'New 2.5D';
+        stroke3DItem.onclick = (e) => {
+            e.stopPropagation();
+            const pos = screenToWhiteboard(x, y);
+            const noteX = pos.x - 180;
+            const noteY = pos.y - 160;
+            const newRef = globalNotesRef.push();
+            newRef.set({ type: 'gstroke', data: '', x: noteX, y: noteY, w: 360, h: 320, timestamp: Date.now() });
+            state.contextMenu.remove();
+            state.contextMenu = null;
+        };
+
+        const sphereItem = document.createElement('div');
+        sphereItem.className = 'context-menu-item';
+        sphereItem.textContent = 'New 2D Sphere';
+        sphereItem.onclick = (e) => {
+            e.stopPropagation();
+            const pos = screenToWhiteboard(x, y);
+            const noteX = pos.x - 140;
+            const noteY = pos.y - 140;
+            const newRef = globalNotesRef.push();
+            newRef.set({ type: 'sphere2d', data: '', x: noteX, y: noteY, w: 280, h: 280, timestamp: Date.now() });
+            state.contextMenu.remove();
+            state.contextMenu = null;
+        };
+
+        const cubeNoteItem = document.createElement('div');
+        cubeNoteItem.className = 'context-menu-item';
+        cubeNoteItem.textContent = 'New 3D Cube';
+        cubeNoteItem.onclick = (e) => {
+            e.stopPropagation();
+            const pos = screenToWhiteboard(x, y);
+            const noteX = pos.x - 150;
+            const noteY = pos.y - 150;
+            const newRef = globalNotesRef.push();
+            newRef.set({ 
+                type: 'cube', 
+                data: '', 
+                x: noteX, 
+                y: noteY, 
+                w: 300, 
+                h: 300, 
+                timestamp: Date.now() 
+            });
+            state.contextMenu.remove();
+            state.contextMenu = null;
+        };
+
+        state.contextMenu.appendChild(textNoteItem);
+        state.contextMenu.appendChild(paintNoteItem);
+        state.contextMenu.appendChild(imageNoteItem);
+        state.contextMenu.appendChild(stroke3DItem);
+        state.contextMenu.appendChild(sphereItem);
+        state.contextMenu.appendChild(cubeNoteItem);
     document.body.appendChild(state.contextMenu);
 }
 
@@ -91,12 +196,49 @@ export function showContextMenu(x, y, noteId) {
     state.contextMenu.style.left = x + 'px';
     state.contextMenu.style.top = y + 'px';
 
+    const noteEl = document.querySelector(`[data-id="${noteId}"]`);
+    const noteType = noteEl?.getAttribute('data-type');
+
     const moveItem = createMoveMenuItem(noteId);
     const resizeItem = createResizeMenuItem(noteId);
+    let colorItem = null;
+    if (noteType === 'cube' || noteType === 'sphere2d') {
+        colorItem = document.createElement('div');
+        colorItem.className = 'context-menu-item';
+        colorItem.textContent = 'Set Base Color';
+        colorItem.onclick = (e) => {
+            e.stopPropagation();
+            const anchorRect = colorItem.getBoundingClientRect();
+            const ref = globalNotesRef.child(noteId);
+            ref.once('value', (snap) => {
+                const val = snap.val() || {};
+                let dataObj = {};
+                if (val.data) {
+                    try { dataObj = JSON.parse(val.data) || {}; } catch (err) { dataObj = {}; }
+                }
+                const initialColor = dataObj.baseColor || '#ffffff';
+                let lastColor = null;
+                openBaseColorPicker({
+                    anchorRect,
+                    initialColor,
+                    onSelect: (hex) => {
+                        if (!hex || hex === lastColor) return;
+                        lastColor = hex;
+                        applyBaseColor(noteId, noteType, hex);
+                    }
+                });
+            });
+            if (state.contextMenu) {
+                state.contextMenu.remove();
+                state.contextMenu = null;
+            }
+        };
+    }
     const deleteItem = createDeleteMenuItem(noteId);
 
     state.contextMenu.appendChild(moveItem);
     state.contextMenu.appendChild(resizeItem);
+    if (colorItem) state.contextMenu.appendChild(colorItem);
     state.contextMenu.appendChild(deleteItem);
     document.body.appendChild(state.contextMenu);
 }
@@ -156,8 +298,6 @@ function createMoveMenuItem(noteId) {
             }, 100);
         }
         
-        state.contextMenu.remove();
-        state.contextMenu = null;
     };
     return moveItem;
 }
