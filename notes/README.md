@@ -16,11 +16,14 @@ Browser-based collaborative guestbook where people can leave notes, write, and d
 - **Painting tools:** 
     - Pen | Pencil | Eraser with pressure curve and adjustable settings (size, opacity, flow)
     - Colorwheel and eyedropper
-- **2D notes:** Freehand drawing canvas with undo/redo history | Text content | Import images
+- **2D notes:** Freehand drawing canvas with undo/redo history | Text content | Import media
+<img  height="270" src="../img/paintfun.gif" /> <img  height="270" src="../img/painttree.gif" />
+
 - **3D canvases:** Cube, sphere, or 2.5D modes. Draw on any 2D plane within 3D scene
 
 
-<img  height="300" src="../img/paintfun.gif" />
+<img  height="270" src="../img/spunchbob.gif"/> 
+
 
 ### 🎐 Technologies
 
@@ -46,8 +49,8 @@ Browser-based collaborative guestbook where people can leave notes, write, and d
 - **[Shift + MB1]:** Rotate 3D scene
 - Drag note corners to move
 
-<img  height="300" src="../img/spunchbob.gif" />
-<img  height="300" src="../img/painttree.gif" />
+<img height="300" alt="image" src="https://github.com/user-attachments/assets/b80f66a4-57ed-49b1-ae9c-80ab6ef8377e" />
+
 
 
 ### 🎄 Local development
@@ -64,3 +67,6 @@ Browser-based collaborative guestbook where people can leave notes, write, and d
 - **Real-time sync:** When multiple users draw on the same note simultaneously, strokes can occasionally be overwritten due to the snapshot sync. Move from canvas snapshots to individual stroke events
 - **Drawing layers:** Implement layer arrangement options to keep canvas elements separate to be edited independently.
 - **Export/import:** Save and restore whiteboard canvas or individual notes
+
+<img height="200" alt="image" src="https://github.com/user-attachments/assets/26f4656d-71b9-4bd8-ac65-954353a6cb2f" />
+
