@@ -1,9 +1,5 @@
 import { state } from './state.js';
 
-// draw updates
-if (!state.pendingDrawMerges) state.pendingDrawMerges = {};
-if (!state.lastAppliedDrawTs) state.lastAppliedDrawTs = {};
-
 // global eyedropper preview
 let globalEyedropperPreview = document.getElementById('eyedropperPreviewCircle');
 if (!globalEyedropperPreview) {
@@ -288,20 +284,29 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
         const end = () => {
             if (!drawing) return;
             drawing = false;
+            const endedPath = [...currentPath];
             currentPath = [];
             savedCanvas = null;
 
             if (state.drawSaveTimeouts[id]) clearTimeout(state.drawSaveTimeouts[id]);
             state.drawSaveTimeouts[id] = setTimeout(() => {
                 state.activeDrawingNotes.delete(id);
-                mergePendingRemote(id, canvas, () => {
-                    try {
-                        const url = canvas.toDataURL('image/png');
-                        notesRef.child(id).update({ type: 'draw', data: url, updatedAt: Date.now() });
-                        saveToHistory(id, canvas);
-                    } catch (_) {}
-                    delete state.drawSaveTimeouts[id];
-                });
+                try {
+                    // serialize stroke data instead of full canvas
+                    const stroke = {
+                        points: endedPath,
+                        tool: state.drawingMode,
+                        color: state.brushColor,
+                        size: state.toolSettings?.[state.drawingMode]?.size || 2,
+                        flow: state.toolSettings?.[state.drawingMode]?.flow || 0.38,
+                        opacity: state.toolSettings?.[state.drawingMode]?.opacity || 1,
+                        timestamp: Date.now()
+                    };
+                    // send stroke event to firebase
+                    notesRef.child(id).child('strokes').push(stroke);
+                    saveToHistory(id, canvas);
+                } catch (_) {}
+                delete state.drawSaveTimeouts[id];
             }, 300);
         };
         
@@ -348,24 +353,84 @@ export function setupDrawingCanvas(canvas, id, data, notesRef) {
     });
 }
 
-// updates to drawing notes (call after canvas is created)
-export function listenForDrawingUpdates(notesRef, noteId, canvas) {
-    // remove previous listeners 
-    notesRef.child(noteId).off('value');
-    notesRef.child(noteId).on('value', (snapshot) => {
-        const note = snapshot.val();
-        if (note && note.type === 'draw' && note.data) {
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            };
-            img.src = note.data;
+// apply stroke to canvas
+function applyStroke(canvas, stroke) {
+    if (!stroke || !stroke.points || stroke.points.length === 0) return;
+    const ctx = canvas.getContext('2d');
+    const tool = stroke.tool || 'pen';
+    const color = stroke.color || '#000000';
+    const size = stroke.size || 2;
+    const flow = stroke.flow || 0.38;
+    const opacity = stroke.opacity || 1;
+    
+    ctx.save();
+    ctx.globalAlpha = clamp01(opacity);
+    ctx.globalCompositeOperation = (tool === 'eraser') ? 'destination-out' : 'source-over';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = (tool === 'eraser') ? 'rgba(0,0,0,1)' : color;
+    
+    const points = stroke.points;
+    if (points.length === 1) {
+        const p = points[0];
+        const pressure = applyPressureCurve(p.pressure || 1.0);
+        const w = Math.max(0.1, size * pressure);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, w / 2, 0, Math.PI * 2);
+        ctx.fillStyle = (tool === 'eraser') ? 'rgba(0,0,0,1)' : color;
+        ctx.fill();
+    } else {
+        for (let i = 0; i < points.length - 1; i++) {
+            const p1 = points[i];
+            const p2 = points[i + 1];
+            const pressure1 = applyPressureCurve(p1.pressure || 1.0);
+            const pressure2 = applyPressureCurve(p2.pressure || 1.0);
+            const width1 = Math.max(0.1, size * pressure1);
+            const width2 = Math.max(0.1, size * pressure2);
+            const avgWidth = (width1 + width2) / 2;
+            ctx.lineWidth = avgWidth;
+            if (i === 0) { ctx.beginPath(); ctx.moveTo(p1.x, p1.y); }
+            if (i < points.length - 2) {
+                const xc = (p2.x + points[i + 2].x) / 2;
+                const yc = (p2.y + points[i + 2].y) / 2;
+                ctx.quadraticCurveTo(p2.x, p2.y, xc, yc);
+            } else {
+                ctx.lineTo(p2.x, p2.y);
+            }
+            ctx.stroke();
         }
-        if (note && note.type === 'text' && note.text) {
+    }
+    ctx.restore();
+}
+
+export function listenForDrawingUpdates(notesRef, noteId, canvas) {
+    // track applied strokes 
+    if (!state.appliedStrokes) state.appliedStrokes = {};
+    if (!state.appliedStrokes[noteId]) state.appliedStrokes[noteId] = new Set();
+    
+    // listen for new stroke events
+    notesRef.child(noteId).child('strokes').on('child_added', (snapshot) => {
+        const strokeId = snapshot.key;
+        const stroke = snapshot.val();
+        
+        if (!state.appliedStrokes[noteId].has(strokeId)) {
+            state.appliedStrokes[noteId].add(strokeId);
+            applyStroke(canvas, stroke);
+        }
+    });
+    
+    // listen for text updates 
+    notesRef.child(noteId).child('textUpdates').on('child_added', (snapshot) => {
+        const updateId = snapshot.key;
+        const update = snapshot.val();
+        if (update && update.text !== undefined) {
             const textEl = canvas.parentElement?.querySelector('.note-text');
-            if (textEl) textEl.textContent = note.text;
+            if (textEl && textEl._applyRemoteUpdate) {
+                // use the special method to avoid re-triggering input
+                textEl._applyRemoteUpdate(update.text);
+            } else if (textEl) {
+                textEl.textContent = update.text;
+            }
         }
     });
 }
@@ -442,7 +507,7 @@ export function undo(noteId, notesRef) {
     }
 
     // update firebase 
-    notesRef.child(noteId).update({ type: 'draw', data: previous });
+    notesRef.child(noteId).update({ type: 'draw', data: previous, updatedAt: Date.now() });
 }
 
 export function redo(noteId, notesRef) {
@@ -466,8 +531,8 @@ export function redo(noteId, notesRef) {
         img.src = next;
     }
 
-    // update firebase
-    notesRef.child(noteId).update({ type: 'draw', data: next });
+    // update firebase 
+    notesRef.child(noteId).update({ type: 'draw', data: next, updatedAt: Date.now() });
 }
 
 function getPos(ev, canvas) {
@@ -477,36 +542,4 @@ function getPos(ev, canvas) {
         x: (ev.clientX - r.left) / zoom,
         y: (ev.clientY - r.top) / zoom
     };
-}
-
-// pending remote strokes
-function mergePendingRemote(noteId, canvas, done) {
-    const pending = state.pendingDrawMerges && state.pendingDrawMerges[noteId];
-    if (!pending || !pending.data) {
-        if (done) done();
-        return;
-    }
-    try {
-        const img = new Image();
-        img.onload = () => {
-            const w = canvas.width;
-            const h = canvas.height;
-            const off = document.createElement('canvas');
-            off.width = w;
-            off.height = h;
-            const octx = off.getContext('2d');
-            octx.drawImage(img, 0, 0, w, h);
-            octx.drawImage(canvas, 0, 0, w, h);
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, w, h);
-            ctx.drawImage(off, 0, 0, w, h);
-            delete state.pendingDrawMerges[noteId];
-            if (done) done();
-        };
-        img.onerror = () => { delete state.pendingDrawMerges[noteId]; if (done) done(); };
-        img.src = pending.data;
-    } catch (_) {
-        delete state.pendingDrawMerges[noteId];
-        if (done) done();
-    }
 }

@@ -407,20 +407,21 @@ export function setupCubeCanvas(container, id, data, notesRef) {
         faceTextures[faceIndex].needsUpdate = true;
     }
 
-    // save rotation and all face drawings to Firebase
+    // save data to firebase
     function saveData() {
-        const faceDrawings = faceCanvases.map(fc => fc.canvas.toDataURL());
-        const saveData = {
+        notesRef.child(id).child('metadata').set({
             rotation: {
                 x: baseCube.rotation.x,
                 y: baseCube.rotation.y,
                 z: baseCube.rotation.z
             },
+            baseColor,
+            timestamp: Date.now()
+        });
+        const faceDrawings = faceCanvases.map(fc => fc.canvas.toDataURL());
+        notesRef.child(id).child('drawingSnapshot').set({
             faceDrawings: faceDrawings,
-            baseColor
-        };
-        notesRef.child(id).update({ 
-            data: JSON.stringify(saveData)
+            timestamp: Date.now()
         });
     }
 
@@ -448,6 +449,42 @@ export function setupCubeCanvas(container, id, data, notesRef) {
         handleResize();
     });
     resizeObserver.observe(container);
+
+    // listen for updates
+    notesRef.child(id).child('metadata').on('value', (snapshot) => {
+        const meta = snapshot.val();
+        if (meta) {
+            if (meta.rotation) {
+                baseCube.rotation.x = meta.rotation.x || 0;
+                baseCube.rotation.y = meta.rotation.y || 0;
+                baseCube.rotation.z = meta.rotation.z || 0;
+                cube.rotation.copy(baseCube.rotation);
+            }
+            if (meta.baseColor && meta.baseColor !== baseColor) {
+                baseColor = meta.baseColor;
+                baseMaterial.color.set(baseColor);
+            }
+        }
+    });
+
+    // listen for snapshot updates
+    notesRef.child(id).child('drawingSnapshot').on('value', (snapshot) => {
+        const snap = snapshot.val();
+        if (snap && snap.faceDrawings && Array.isArray(snap.faceDrawings)) {
+            snap.faceDrawings.forEach((dataUrl, faceIndex) => {
+                if (faceIndex < faceCanvases.length && dataUrl) {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = faceCanvases[faceIndex].canvas;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        faceTextures[faceIndex].needsUpdate = true;
+                    };
+                    img.src = dataUrl;
+                }
+            });
+        }
+    });
 
     cubeInstances.set(id, {
         scene,

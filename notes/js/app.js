@@ -1,4 +1,4 @@
-import { initFirebase } from './firebase.js';
+import { initFirebase, setupCollaborativeCursors } from './firebase.js';
 import { state } from './state.js';
 import { NOTE_W, NOTE_H } from './constants.js';
 import { initToolbar, initBrushPreview } from './ui.js';

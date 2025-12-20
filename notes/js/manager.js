@@ -109,15 +109,45 @@ function createTextContent(text, id, notesRef) {
     content.textContent = text;
     
     let previousText = text;
+    let updateTimeout = null;
+    let isApplyingRemoteUpdate = false;
     
     content.onfocus = () => {
         previousText = content.textContent;
     };
     
+    // debounced push text update
+    const pushTextUpdate = () => {
+        if (updateTimeout) clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+            const newText = content.textContent;
+            if (newText !== previousText) {
+                notesRef.child(id).child('textUpdates').push({ 
+                    text: newText,
+                    timestamp: Date.now()
+                });
+                previousText = newText;
+            }
+        }, 500);
+    };
+    
+    // every input
+    content.addEventListener('input', () => {
+        if (!isApplyingRemoteUpdate) {
+            pushTextUpdate();
+        }
+    });
+    
     content.onblur = () => {
         const newText = content.textContent;
+
+        if (updateTimeout) clearTimeout(updateTimeout);
         if (newText !== previousText) {
-            notesRef.child(id).update({ type: 'text', text: newText });
+            notesRef.child(id).child('textUpdates').push({ 
+                text: newText,
+                timestamp: Date.now()
+            });
+            previousText = newText;
             
             // save text edit action to history
             state.actionHistory.push({
@@ -132,6 +162,65 @@ function createTextContent(text, id, notesRef) {
             state.actionRedoHistory = [];
         }
     };
+    
+    // mark remote updates 
+    content._applyRemoteUpdate = (newText) => {
+        isApplyingRemoteUpdate = true;
+        
+        // save current cursor position
+        const selection = window.getSelection();
+        let cursorOffset = 0;
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const preCaretRange = range.cloneRange();
+            preCaretRange.selectNodeContents(content);
+            preCaretRange.setEnd(range.endContainer, range.endOffset);
+            cursorOffset = preCaretRange.toString().length;
+        }
+        
+        // update text
+        content.textContent = newText;
+        previousText = newText;
+        
+        // cursor position
+        cursorOffset = Math.min(cursorOffset, newText.length);
+        try {
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.setStart(content.firstChild || content, Math.min(cursorOffset, (content.firstChild?.length || 0)));
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        } catch (e) {
+            try {
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.selectNodeContents(content);
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } catch (_) {}
+        }
+        
+        isApplyingRemoteUpdate = false;
+    };
+    
+    // listen for remote text updates
+    if (!state.textListeners) state.textListeners = {};
+    if (!state.textListeners[id]) {
+        state.textListeners[id] = true;
+        notesRef.child(id).child('textUpdates').on('child_added', (snapshot) => {
+            const updateId = snapshot.key;
+            const update = snapshot.val();
+            if (update && update.text !== undefined) {
+                if (content && content._applyRemoteUpdate) {
+                    content._applyRemoteUpdate(update.text);
+                } else if (content) {
+                    content.textContent = update.text;
+                }
+            }
+        });
+    }
     
     return content;
 }

@@ -71,11 +71,16 @@ export function setupStroke3D(container, id, data, notesRef) {
     }
 
     function saveData() {
-        const payload = {
+        // save camera position
+        notesRef.child(id).child('metadata').set({
+            camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+            timestamp: Date.now()
+        });
+        // periodically save full strokes as backup
+        notesRef.child(id).child('strokesSnapshot').set({
             strokes: strokesData,
-            camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z }
-        };
-        notesRef.child(id).update({ data: JSON.stringify(payload) });
+            timestamp: Date.now()
+        });
     }
 
     function addStrokeMesh(stroke, idx) {
@@ -371,6 +376,25 @@ export function setupStroke3D(container, id, data, notesRef) {
     }
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(container);
+
+    // listen for metadata updates (camera position)
+    notesRef.child(id).child('metadata').on('value', (snapshot) => {
+        const meta = snapshot.val();
+        if (meta && meta.camera) {
+            camera.position.set(meta.camera.x, meta.camera.y, meta.camera.z);
+        }
+    });
+
+    // listen for strokes snapshot updates
+    notesRef.child(id).child('strokesSnapshot').on('value', (snapshot) => {
+        const snap = snapshot.val();
+        if (snap && snap.strokes && Array.isArray(snap.strokes)) {
+            // clear existing strokes and reload
+            strokesGroup.children.slice().forEach(child => strokesGroup.remove(child));
+            strokesData = snap.strokes;
+            strokesData.forEach((stroke, idx) => addStrokeMesh(stroke, idx));
+        }
+    });
 
     let rafId;
     function loop() {

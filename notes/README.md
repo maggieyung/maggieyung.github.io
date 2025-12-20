@@ -19,12 +19,16 @@ Browser-based collaborative guestbook where people can leave notes, write, and d
 - **2D notes:** Freehand drawing canvas with undo/redo history | Text content | Import images
 - **3D canvases:** Cube, sphere, or 2.5D modes. Draw on any 2D plane within 3D scene
 
+
+<img  height="300" src="../img/paintfun.gif" />
+
 ### 🎐 Technologies
 
 - **JavaScript**: drawing functionality/interactivity
 - **WebGL**/**Three.js**: 3D canvases
 - **HTML/CSS**: appearance and layout
 - **Firebase Realtime Database**: sync and note changes/snapshots
+
 
 # 🫐Usage
 
@@ -41,6 +45,9 @@ Browser-based collaborative guestbook where people can leave notes, write, and d
 - **[h]:** Flip paint note horizontally
 - **[Shift + MB1]:** Rotate 3D scene
 - Drag note corners to move
+
+<img  height="300" src="../img/spunchbob.gif" />
+<img  height="300" src="../img/painttree.gif" />
 
 
 ### 🎄 Local development

@@ -113,12 +113,18 @@ export function setupSphere2D(container, id, data, notesRef) {
     let lastUV = null;
 
     function save() {
-        const payload = {
+        // save data
+        notesRef.child(id).child('metadata').set({
             rotation: { x: sphere.rotation.x, y: sphere.rotation.y, z: sphere.rotation.z },
+            baseColor,
+            timestamp: Date.now()
+        });
+        // periodically save full drawing snapshot
+        const snapshot = {
             drawing: drawCanvas.toDataURL(),
-            baseColor
+            timestamp: Date.now()
         };
-        notesRef.child(id).update({ data: JSON.stringify(payload) });
+        notesRef.child(id).child('drawingSnapshot').set(snapshot);
     }
 
     function castToSphere(e) {
@@ -286,6 +292,37 @@ export function setupSphere2D(container, id, data, notesRef) {
         renderer.render(scene, camera);
     }
     loop();
+
+    // listen for updates
+    notesRef.child(id).child('metadata').on('value', (snapshot) => {
+        const meta = snapshot.val();
+        if (meta) {
+            if (meta.rotation) {
+                sphere.rotation.x = meta.rotation.x || 0;
+                sphere.rotation.y = meta.rotation.y || 0;
+                sphere.rotation.z = meta.rotation.z || 0;
+                baseSphere.rotation.copy(sphere.rotation);
+            }
+            if (meta.baseColor && meta.baseColor !== baseColor) {
+                baseColor = meta.baseColor;
+                baseMaterial.color.set(baseColor);
+            }
+        }
+    });
+
+    // listen for snapshot updates
+    notesRef.child(id).child('drawingSnapshot').on('value', (snapshot) => {
+        const snap = snapshot.val();
+        if (snap && snap.drawing) {
+            const img = new Image();
+            img.onload = () => {
+                drawCtx.drawImage(img, 0, 0, texSize, texSize);
+                stripWhiteToAlpha(drawCtx, texSize, texSize);
+                texture.needsUpdate = true;
+            };
+            img.src = snap.drawing;
+        }
+    });
 
     sphereInstances.set(id, {
             setBaseColor: (colorHex) => {
