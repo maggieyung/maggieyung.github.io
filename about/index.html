@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maggie Yung | SWE 🫧</title>
+    <title>Maggie Yung | About 🫧</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Jacquard+12&family=Silkscreen&display=swap" rel="stylesheet" type="text/css">
     <style>
@@ -36,6 +36,11 @@
             --avatar: 200px;           
             --p-pad: 20px 24px 18px;  
             --p-size: 17px;            
+        .project-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
             --cont-size: 20px;          
         }
 
@@ -48,7 +53,18 @@
             cursor: url("../img/cursorclick.png") 16 16, auto;
         }
         
+        /* project card linkable */
+        .project-card.linkable {
+            transition: transform 0.15s ease, filter 0.15s ease;
+            cursor: pointer;
+        }
+        .project-card.linkable:hover {
+            transform: translateY(-4px) scale(1.01);
+            filter: drop-shadow(0 6px 12px rgba(0,0,0,0.15));
+        }
+        
         /* custom cursor */
+
         .custom-cursor {
             display: inline-block;
             user-select: none;
@@ -201,6 +217,57 @@
         .gallery-flex {
             gap: 0 !important;
         }
+
+
+        /* project cards */
+        .projects {
+            width: 100%;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+        .project-card {
+            background-image: url('../img/dialoguebox2.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 100% 100%;
+            background-color: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 28px 24px 24px 24px;
+            margin: 16px 0;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+        .project-title {
+            margin: 0 0 8px;
+            font-weight: 800;
+            font-size: 1.05em;
+            color: #3a3a13;
+        }
+        .project-desc {
+            margin: 6px 0 10px;
+            color: #000000;
+        }
+        .project-meta {
+            margin: 6px 0 8px;
+            font-family: 'Silkscreen', monospace;
+            font-size: 0.95em;
+            color: #5a539c;
+        }
+        .meta-label {
+            font-weight: 700;
+            color: #1a3d0f;
+        }
+        .project-list {
+            list-style: none;
+            margin: 8px 0 0 0;
+            padding: 0 0 0 2px;
+        }
+        .project-list li {
+            position: relative;
+            padding-left: 16px;
+            margin: 6px 0;
+        }
     </style>
 </head>
 <body>
@@ -242,7 +309,7 @@
 
             <h1 class="style3 header-tiltwarp" style="color: #1b1b1a;">🎄Hi, I'm Maggie 🫧</h1>
             <div style="height: 20px;"></div>
-            <div style="font-size:1.3em;color: #1b1b1a;">I'm a full-stack software engineer, game developer, and artist!</div>
+            <div style="font-size:1.3em;color: #1b1b1a;">I'm a full-stack software engineer, artist, and game developer!</div>
             <div style="height: 20px;"></div>
             <img src="../img/myprofile.png" height="400" style="display: block; margin: 0 auto;" draggable="false">
             <h1 class="style3 header-dotgothic"><span style="font-family: inherit; font-size: 0.8em; color: #3b3197;">nice to meet you!</span></h1>
@@ -276,7 +343,7 @@
 
             
             <p><strong>Languages:</strong> </p> <span style="margin-left:16px;font-size: 1em;">Python, C, C#, Java, JavaScript, HTML/CSS, C++</span></p>
-            <p><strong>ML/DL:</strong> </p><span style="margin-left:16px;font-size: 1em;">Keras, Pandas, Matplotlib, NumPy, scikit-learn, Ultralytics, SciPy</span></p>
+            <p><strong>ML/DL and Data:</strong> </p><span style="margin-left:16px;font-size: 1em;">Keras, pandas, Matplotlib, NumPy, scikit-learn, SciPy, Seaborn</span></p>
             <p><strong>Frameworks and Libraries:</strong> </p><span style="margin-left:16px;font-size: 1em;">TensorFlow, WebGL, Three.js, OpenCV, XTK</span></p>
             <p><strong>Software:</strong> </p><span style="margin-left:16px;font-size: 1em;">Unity (UI Toolkit), Adobe Suite (Photoshop, After Effects), Blender, Figma, Asesprite, Live2D Cubism</span></p>
             <p><strong>Game Development:</strong> </p><span style="margin-left:16px;font-size: 1em;">UI/UX, Design Documentation, Unit Testing, Version Control, Quality Assurance, AGILE</span></p>
@@ -284,6 +351,66 @@
 
         
     <div style="height: 60px;"></div>
+
+        <div style="width:100%;max-width:750px;margin:0 auto;padding:10px 0 0 0;border-top:2px solid #e2d2e9;">
+
+            <h1 class="style1" style="font-size:2em; margin: 6px 0;">://work </h1>
+    <!-- projects -->
+
+    <div class="projects">
+        <a class="project-link" href="https://github.com/maggieyung/ecornell-portfolio">
+        <div class="project-card linkable">
+            <div class="project-title">1. <strong>Government Confidence (WHR) ML Model</strong></div>
+            <p class="project-desc">Predictive regression model using the World Happiness Report (WHR) dataset to identify key factors influencing government trust and corruption perceptions</p>
+            <div class="project-meta"><span class="meta-label">Tech Stack:</span> NumPy, Pandas, Scikit-Learn, Matplotlib, Seaborn</div>
+            <ul class="project-list">
+                <li><strong>Result:</strong> Achieved RMSE of 0.0364 and MAE of 0.0335 after model selection</li>
+                <li>Trained, optimized, and benchmarked six different classifiers: Random Forest, Decision Trees, Ridge Regression, Gradient Boosted Decision Trees, Stacking</li>
+                <li><strong>Techniques:</strong> Scaling/normalization, feature engineering, cross-validation, hyperparameter tuning</li>
+                <li><strong>Learnings:</strong> Building an end-to-end ML supervised regression pipeline from scratch (data preprocessing, feature engineering, model evaluation, selection)</li>
+            </ul>
+        </div>
+        </a>
+
+        <a class="project-link" href="https://github.com/maggieyung/maggieyung.github.io/tree/main/notes" target="_blank" rel="noopener noreferrer">
+        <div class="project-card linkable">
+            <div class="project-title">2. <strong>Collaborative Web Guestbook</strong></div>
+            <p class="project-desc">Browser-based interactive guestbook for collaborative editing and 2D/3D rendering</p>
+            <div class="project-meta"><span class="meta-label">Tech Stack:</span> JavaScript, WebGL, Three.js, HTML, CSS, Firebase Realtime Database</div>
+            <ul class="project-list">
+                <li><strong>Result:</strong> Custom canvas tools, 3D object manipulation, geometric visualization</li>
+                <li>Implemented cloud backend for live syncing of drawing actions and real-time canvas updates (Users can draw together simultaneously in real-time)</li>
+                <li><strong>Learnings:</strong> ES6 modules, Firebase snapshots, 3D graphics, DOM interactions, front-end form handling, user interaction, off-screen buffers</li>
+            </ul>
+        </div>
+        </a>
+
+        <div style="text-align:center; margin: 18px 0 6px;">
+            <img height="230" src="https://raw.githubusercontent.com/maggieyung/maggieyung.github.io/main/img/spunchbob.gif" alt="fun gif" style="border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.08);" />
+            <img height="230" alt="image" src="https://github.com/user-attachments/assets/b80f66a4-57ed-49b1-ae9c-80ab6ef8377e" style="border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.08); margin-left:8px;" />
+
+
+        <div class="project-card linkable">
+            <div class="project-title">3. <strong>2.5D Role-Playing Game</strong></div>
+            <p class="project-desc">2.5D top-down Unity game in C# integrating custom shaders and narrative UI systems</p>
+            <div class="project-meta"><span class="meta-label">Toolkit:</span> C#, Unity (UI Toolkit), Adobe Photoshop, Blender, Clip Studio Paint</div>
+            <ul class="project-list">
+                <li><strong>Learnings:</strong> Designed game mechanics and scriptable objects to manage UI overlays and dialogue systems, applying object-orientated design principles, singleton and observer design patterns, and decomposition skills </li>
+            </ul>
+        </div>
+
+        
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
 
 
 
@@ -317,6 +444,9 @@
         </div>
     </a>
 </div>
+
+        <div style="width:100%;max-width:750px;margin:0 auto;padding:10px 0 0 0;border-top:2px solid #e2d2e9;">
+
 <style>
     .media-link-hover {
         cursor: url("../img/cursorhover.png") 16 16, pointer !important;
@@ -339,7 +469,6 @@
         align-items: center;
         justify-content: center;
         pointer-events: none;
-        /* Add cursor for overlay */
         cursor: url("../img/cursorhover.png") 16 16, pointer !important;
     }
     .media-hover-wrap:hover .media-overlay {
@@ -377,25 +506,84 @@
             
         <!-- gallery -->
 <div class="gallery-row" style="display: flex; flex-wrap: wrap; align-items: stretch; justify-content: center; width: 100vw; margin-left: 50%; transform: translateX(-50%); padding: 0; gap: 0;">
-    <img src="../img/ahriprocess.gif" alt="ahri" class="photo">
-    <img src="../img/stocking.jpg" alt="stocking" class="photo">
-    <img src="../img/miti_oc.jpg" alt="miti" class="photo">
-    <img src="../img/lau.jpg" alt="lau" class="photo">
-    <img src="../img/stringcheese.png" alt="string cheese" class="photo">
-    <img src="../img/misty.jpg" alt="string cheese" class="photo">
-    <img src="../img/pixelwalk.gif" alt="pixelwalk" class="photo">
-    <img src="../img/pixelsprite.png" alt="sprite" class="photo">
-    <img src="../img/played.gif" alt="sprite" class="photo">
-    <img src="../img/walkidle.gif" alt="walkidle" class="photo">
-    <img src="../img/portrait.png" alt="portrait" class="photo">
-    <img src="../img/blenderhouse.png" alt="house" class="photo">
-    <img src="../img/babylon.png" alt="babylon" class="photo">
+    <div class="gallery-item">
+        <img src="../img/ahriprocess.gif" alt="ahri" class="photo">
+        <div class="gallery-hover-box">Ahri painting process - (League of Legends) [fan art]</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/stocking.jpg" alt="stocking" class="photo">
+        <div class="gallery-hover-box"> Stocking - (Panty & Stocking with Garterbelt) [fan art]</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/miti_oc.jpg" alt="miti" class="photo">
+        <div class="gallery-hover-box"> Miti - [original character design]</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/lau2.png" alt="lau" class="photo">
+        <div class="gallery-hover-box">illustration for my friend's original character!</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/lau.jpg" alt="lau" class="photo">
+        <div class="gallery-hover-box">illustration for my friend's original character!</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/stringcheese.png" alt="string cheese" class="photo">
+        <div class="gallery-hover-box">String Cheese Cookie - (Cookie Run: OvenSmash) [fan art]</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/osmanthus.png" alt="osmanthus" class="photo">
+        <div class="gallery-hover-box">Golden Osmanthus Cookie - (Cookie Run: Kingdom) [fan art]</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/misty.jpg" alt="misty" class="photo">
+        <div class="gallery-hover-box">original character illustration!</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/portrait.png" alt="portrait" class="photo">
+        <div class="gallery-hover-box">portrait illustration for my game - [original character]</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/pixelsprite.png" alt="sprite" class="photo">
+        <div class="gallery-hover-box">pixel sprite for my game - [original character]</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/pixelwalk.gif" alt="pixelwalk" class="photo">
+        <div class="gallery-hover-box">pixel walk animation for my game - [original character] </div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/played.gif" alt="ggez" class="photo">
+        <div class="gallery-hover-box">"I've played these games before" - chibi animation gif for my friend!</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/walkidle.gif" alt="walkidle" class="photo">
+        <div class="gallery-hover-box">walking and idle animation cycle for my game - [original character]</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/blenderhouse.png" alt="house" class="photo">
+        <div class="gallery-hover-box">3D modelled a house in Blender for my game!</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/babylon.png" alt="babylon" class="photo">
+        <div class="gallery-hover-box">BabylonJS 3D scene with PBR (Physically Based Rendering) materials!</div>
+    </div>
+    <div class="gallery-item">
+        <img src="../img/nick.jpg" alt="nick" class="photo">
+        <div class="gallery-hover-box">custom DIY charms i made for my friend with polymer clay and shrink plastic! - (Moo Deng & Poro from League of Legends)</div>
+    </div>
 
 
 
 
 
 
+
+
+</div>
+<!-- enlarged view -->
+<div id="photo-enlarge" style="display:none;position:fixed;z-index:9999;top:0;left:0;width:100vw;height:100vh;background:rgba(30,30,40,0.85);align-items:center;justify-content:center;backdrop-filter:blur(2px);">
+    <span id="photo-enlarge-close" style="position:absolute;top:32px;right:48px;font-size:3em;color:#ffffff;cursor:pointer;font-family:'Silkscreen',monospace;z-index:10001;user-select:none;text-shadow:0 2px 8px rgba(228, 228, 228, 0.533);">&times;</span>
+    <img id="photo-enlarge-hoverimg" src="../img/cursorhover.png" alt="close hover" style="position:absolute;top:80px;right:48px;width:48px;height:48px;z-index:10002;pointer-events:none;opacity:0;transition:opacity 0.15s;" draggable="false">
+    <img id="photo-enlarge-img" src="" alt="enlarged" style="max-width:90vw;max-height:90vh;box-shadow:0 8px 32px rgba(0, 0, 0, 0.533);border-radius:18px;display:block;margin:auto;background:#fff;">
 </div>
 <style>
     .gallery-row {
@@ -421,7 +609,163 @@
         border: 0 !important;
         display: block;
         background: #fff;
+        filter: brightness(0.9);
+        cursor: url("../img/cursorhover2.png") 16 16, zoom-in;
     }
+    .photo:hover {
+        filter: brightness(0.84);
+    }
+    #photo-enlarge-close:hover {
+        color: #8b8b8b !important;
+        text-shadow: 0 2px 8px #0008;
+    }
+    
+    /* gallery hover boxes */
+    .gallery-item {
+        flex: 1 1 auto;
+        min-width: 200px;
+        max-width: 20vw;
+        height: auto;
+        max-height: 400px;
+        display: flex;
+    }
+    .gallery-item .photo {
+        width: 100%;
+        height: 100%;
+        flex: none;
+    }
+    .gallery-hover-box {
+        display: none;
+        position: fixed;
+        background: linear-gradient(135deg, rgba(0, 0, 0, 0.97) 0%, rgba(20, 20, 30, 0.95) 100%);
+        color: #fff;
+        padding: 14px 18px;
+        border-radius: 12px;
+        font-size: 0.9em;
+        max-width: 250px;
+        z-index: 10000;
+        pointer-events: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        font-family: 'Segoe UI', Arial, sans-serif;
+        line-height: 1.4;
+        
+        opacity: 0;
+        transform: scale(0.9) translateY(-5px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    .gallery-hover-box.show {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+</style>
+
+<script>
+// enlarge photo
+document.addEventListener('DOMContentLoaded', function() {
+    const enlarge = document.getElementById('photo-enlarge');
+    const enlargeImg = document.getElementById('photo-enlarge-img');
+    const closeBtn = document.getElementById('photo-enlarge-close');
+    const hoverImg = document.getElementById('photo-enlarge-hoverimg');
+    document.querySelectorAll('.gallery-row .photo').forEach(function(img) {
+        img.style.cursor = 'url("../img/cursorhover2.png") 16 16, zoom-in';
+        img.addEventListener('click', function() {
+            enlargeImg.src = img.src;
+            enlargeImg.alt = img.alt;
+            enlarge.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        });
+    });
+    closeBtn.addEventListener('mouseenter', function() {
+        hoverImg.style.opacity = '1';
+    });
+    closeBtn.addEventListener('mouseleave', function() {
+        hoverImg.style.opacity = '0';
+    });
+    closeBtn.addEventListener('click', function() {
+        enlarge.style.display = 'none';
+        enlargeImg.src = '';
+        document.body.style.overflow = '';
+        hoverImg.style.opacity = '0';
+    });
+    enlarge.addEventListener('click', function(e) {
+        if (e.target === enlarge) {
+            enlarge.style.display = 'none';
+            enlargeImg.src = '';
+            document.body.style.overflow = '';
+        }
+    });
+    document.addEventListener('keydown', function(e) {
+        if (enlarge.style.display === 'flex' && (e.key === 'Escape' || e.key === 'Esc')) {
+            enlarge.style.display = 'none';
+            enlargeImg.src = '';
+            document.body.style.overflow = '';
+        }
+    });
+    
+    // gallery hover boxes
+    const sharedHoverBox = document.createElement('div');
+    sharedHoverBox.className = 'gallery-hover-box';
+    document.body.appendChild(sharedHoverBox);
+    
+    let hoverTimeout;
+    
+    document.querySelectorAll('.gallery-item').forEach(function(item) {
+        const img = item.querySelector('.photo');
+        const text = item.querySelector('.gallery-hover-box').textContent;
+        
+        img.addEventListener('mouseenter', function() {
+            clearTimeout(hoverTimeout);
+            sharedHoverBox.textContent = text;
+            sharedHoverBox.style.display = 'block';
+            setTimeout(() => sharedHoverBox.classList.add('show'), 10);
+        });
+        
+        img.addEventListener('mousemove', function(e) {
+            // boundary
+            const offset = 20;
+            const boxWidth = sharedHoverBox.offsetWidth;
+            const boxHeight = sharedHoverBox.offsetHeight;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let leftPos = e.clientX + offset;
+            let topPos = e.clientY + offset;
+            
+            // right edge
+            if (leftPos + boxWidth > viewportWidth - 10) {
+                leftPos = e.clientX - boxWidth - offset;
+            }
+            
+            // bottom edge
+            if (topPos + boxHeight > viewportHeight - 10) {
+                topPos = e.clientY - boxHeight - offset;
+            }
+            
+            // left edge
+            if (leftPos < 10) {
+                leftPos = 10;
+            }
+            
+            // Check top edge
+            if (topPos < 10) {
+                topPos = 10;
+            }
+            
+            sharedHoverBox.style.left = leftPos + 'px';
+            sharedHoverBox.style.top = topPos + 'px';
+        });
+        
+        img.addEventListener('mouseleave', function() {
+            sharedHoverBox.classList.remove('show');
+            hoverTimeout = setTimeout(() => {
+                sharedHoverBox.style.display = 'none';
+            }, 200);
+        });
+    });
+});
+</script>
 </style>
             
 
@@ -436,6 +780,7 @@
     <h1 class="style4" style="font-size:2em; margin: 6px 0;">://contact</h1>
     <p style="text-align:center; font-size: 20px">Email: <a href="mailto:maggieyung677@gmail.com" style="color:#475f21;text-decoration:underline;">maggieyung677@gmail.com</a></p>
     <p style="text-align:center; font-size: 20px">Linkedin: <a href="https://www.linkedin.com/in/maggieyung/" target="_blank" style="color:#475f21;text-decoration:underline;">/in/maggieyung/</a></p>
+    <p style="text-align:center; font-size: 20px">GitHub: <a href="    https://github.com/maggieyung" target="_blank" style="color:#475f21;text-decoration:underline;">github.com/maggieyung</a></p>
 
 
             <div style="height: 30px;"></div>
