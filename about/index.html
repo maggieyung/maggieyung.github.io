@@ -307,12 +307,25 @@
             <!-- header -->
             <h1 class="style1" style="font-size:2em; margin: 10px 0;">c:\users\maggie</h1>
 
-            <h1 class="style3 header-tiltwarp" style="color: #1b1b1a;">🎄Hi, I'm Maggie 🫧</h1>
+            <h1 class="style3 header-tiltwarp" style="color: #1b1b1a; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <div id="emoji-tree-wrapper" style="perspective: 1000px; display: inline-block;">
+                    <span id="emoji-tree" style="display: inline-block; transition: transform 0.3s ease;">🎄</span>
+                </div>
+                <span>Hi, I'm Maggie</span>
+                <div id="emoji-bubble-wrapper" style="perspective: 1000px; display: inline-block;">
+                    <span id="emoji-bubble" style="display: inline-block; transition: transform 0.3s ease;">🫧</span>
+                </div>
+            </h1>
             <div style="height: 20px;"></div>
             <div style="font-size:1.3em;color: #1b1b1a;">I'm a full-stack software engineer, artist, and game developer!</div>
             <div style="height: 20px;"></div>
             <img src="../img/myprofile.png" height="400" style="display: block; margin: 0 auto;" draggable="false">
-            <h1 class="style3 header-dotgothic"><span style="font-family: inherit; font-size: 0.8em; color: #3b3197;">nice to meet you!</span></h1>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+                <h1 class="style3 header-dotgothic"><span style="font-family: inherit; font-size: 0.8em; color: #3b3197;">nice to meet you!</span></h1>
+                <div id="cursor-pick-wrapper" style="perspective: 1000px; display: inline-block;">
+                    <img id="cursor-pick" src="../img/cursorpick.png" height="32" style="display: block; transition: transform 0.3s ease;" draggable="false">
+                </div>
+            </div>
             <div style="height: 15px;"></div>
 
 
@@ -391,8 +404,8 @@
 
 
         <div class="project-card linkable">
-            <div class="project-title">3. <strong>2.5D Role-Playing Game</strong></div>
-            <p class="project-desc">2.5D top-down Unity game in C# integrating custom shaders and narrative UI systems</p>
+            <div class="project-title">3. <strong>2.5D RPG</strong></div>
+            <p class="project-desc">2.5D top-down adventure role-playing Unity game in C# integrating custom shaders and narrative UI systems</p>
             <div class="project-meta"><span class="meta-label">Toolkit:</span> C#, Unity (UI Toolkit), Adobe Photoshop, Blender, Clip Studio Paint</div>
             <ul class="project-list">
                 <li><strong>Learnings:</strong> Designed game mechanics and scriptable objects to manage UI overlays and dialogue systems, applying object-orientated design principles, singleton and observer design patterns, and decomposition skills </li>
@@ -536,7 +549,7 @@
     </div>
     <div class="gallery-item">
         <img src="../img/misty.jpg" alt="misty" class="photo">
-        <div class="gallery-hover-box">original character illustration!</div>
+        <div class="gallery-hover-box">original character illustration</div>
     </div>
     <div class="gallery-item">
         <img src="../img/portrait.png" alt="portrait" class="photo">
@@ -556,19 +569,19 @@
     </div>
     <div class="gallery-item">
         <img src="../img/walkidle.gif" alt="walkidle" class="photo">
-        <div class="gallery-hover-box">walking and idle animation cycle for my game - [original character]</div>
+        <div class="gallery-hover-box">walking and idle animation cycle for my game in Unity - [original character]</div>
     </div>
     <div class="gallery-item">
         <img src="../img/blenderhouse.png" alt="house" class="photo">
-        <div class="gallery-hover-box">3D modelled a house in Blender for my game!</div>
+        <div class="gallery-hover-box">3D modelled a house in Blender for my game</div>
     </div>
     <div class="gallery-item">
         <img src="../img/babylon.png" alt="babylon" class="photo">
-        <div class="gallery-hover-box">BabylonJS 3D scene with PBR (Physically Based Rendering) materials!</div>
+        <div class="gallery-hover-box">BabylonJS 3D scene with PBR materials</div>
     </div>
     <div class="gallery-item">
         <img src="../img/nick.jpg" alt="nick" class="photo">
-        <div class="gallery-hover-box">custom DIY charms i made for my friend with polymer clay and shrink plastic! - (Moo Deng & Poro from League of Legends)</div>
+        <div class="gallery-hover-box">custom DIY charms i made for my friend with polymer clay and shrink plastic! - (Moo Deng the pygmy hippo & Poro from League of Legends)</div>
     </div>
 
 
@@ -811,6 +824,53 @@ document.addEventListener('mouseleave', function() {
     const floss = document.getElementById('parallax-floss');
     if (floss) floss.style.transform = 'translateX(-50%)';
 });
+
+
+
+
+
+// hover animation
+function add3DHoverAnimation(elementId, wrapperId, hoverScale = 1.2) {
+    const element = document.getElementById(elementId);
+    const wrapper = document.getElementById(wrapperId);
+    
+    if (element && wrapper) {
+        wrapper.addEventListener('mouseenter', function() {
+            element.style.transition = 'transform 0.1s ease';
+        });
+        
+        wrapper.addEventListener('mousemove', function(e) {
+            const rect = wrapper.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+            
+            const rotateX = (y / rect.height) * -30;
+            const rotateY = (x / rect.width) * 30;
+            const translateZ = 20;
+            
+            element.style.transform = `
+                perspective(1000px)
+                rotateX(${rotateX}deg)
+                rotateY(${rotateY}deg)
+                translateZ(${translateZ}px)
+                scale(${hoverScale})
+            `;
+        });
+        
+        wrapper.addEventListener('mouseleave', function() {
+            element.style.transition = 'transform 0.5s ease';
+            element.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale(1)';
+        });
+    }
+}
+
+add3DHoverAnimation('cursor-pick', 'cursor-pick-wrapper', 1.2);
+add3DHoverAnimation('emoji-tree', 'emoji-tree-wrapper', 1.3);
+add3DHoverAnimation('emoji-bubble', 'emoji-bubble-wrapper', 1.3);
+
+
+
+
 </script>
 
 
