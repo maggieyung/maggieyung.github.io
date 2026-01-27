@@ -11,6 +11,7 @@
             margin: 0;
             padding: 0;
             overflow-x: hidden;
+            scrollbar-gutter: stable;
             background-image: linear-gradient(0deg, rgba(247,247,250,0.6) 0%, rgba(236,236,236,0.6) 100%);
             background-size: cover;
             background-attachment: fixed;
@@ -36,12 +37,13 @@
             --avatar: 200px;           
             --p-pad: 20px 24px 18px;  
             --p-size: 17px;            
+            --cont-size: 20px;          
+        }
+
         .project-link {
             display: block;
             text-decoration: none;
             color: inherit;
-        }
-            --cont-size: 20px;          
         }
 
         /* global custom cursor */
@@ -268,7 +270,41 @@
             padding-left: 16px;
             margin: 6px 0;
         }
-    </style>
+
+        .gap-sm { height: 15px; }
+        .gap-md { height: 20px; }
+        .gap-lg { height: 60px; }
+        .gap-xl { height: 80px; }
+
+        .section-container {
+            width: 100%;
+            max-width: 750px;
+            margin: 0 auto;
+            padding: 10px 0 0 0;
+            border-top: 2px solid #e2d2e9;
+        }
+
+        .text-center-lg {
+            max-width: 700px;
+            font-size: 1.3em;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .contact-section {
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 0 0 0;
+            border-top: 2px solid #e2d2e9;
+            background: radial-gradient(circle at 50% 30%, #d5ddc1 0%, #e6e7e1 70%, #e4dede 100%);
+        }
+
+        .contact-link {
+            color: #475f21;
+            text-decoration: underline;
+        }
 </head>
 <body>
 
@@ -316,9 +352,9 @@
                     <span id="emoji-bubble" style="display: inline-block; transition: transform 0.3s ease;">🫧</span>
                 </div>
             </h1>
-            <div style="height: 20px;"></div>
+            <div class="gap-md"></div>
             <div style="font-size:1.3em;color: #1b1b1a;">I'm a full-stack software engineer, artist, and game developer!</div>
-            <div style="height: 20px;"></div>
+            <div class="gap-md"></div>
             <img src="../img/myprofile.png" height="400" style="display: block; margin: 0 auto;" draggable="false">
             <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
                 <h1 class="style3 header-dotgothic"><span style="font-family: inherit; font-size: 0.8em; color: #3b3197;">nice to meet you!</span></h1>
@@ -326,11 +362,9 @@
                     <img id="cursor-pick" src="../img/cursorpick.png" height="32" style="display: block; transition: transform 0.3s ease;" draggable="false">
                 </div>
             </div>
-            <div style="height: 15px;"></div>
-
-
+            <div class="gap-sm"></div>
             <div class="star-gradient" style="opacity:0.7;"> ݁₊✧⊹ </div>
-            <div style="height: 60px;"></div>
+            <div class="gap-lg"></div>
             <!-- parallax -->
             <div style="position:relative;width:100%;height:0;">
                 <img id="parallax-floss"
@@ -343,13 +377,13 @@
 
 
 
-    <div style="height: 80px;"></div>
-    <div style="max-width:700px; font-size:1.3em; margin:0 auto; text-align:center;">
+    <div class="gap-xl"></div>
+    <div class="text-center-lg">
         I am a <strong>Computer Science</strong> major at the University of Massachusetts Boston, and a <strong>ML/AI</strong> Fellow at MIT Break Through Tech AI.
-        <div style="height: 32px;"></div>
+        <div class="gap-md"></div>
         </div>
-        <div style="width:100%;max-width:750px;margin:0 auto;padding:10px 0 0 0;border-top:2px solid #e2d2e9;">
-                        <div style="height: 23px;"></div>
+        <div class="section-container">
+                        <div class="gap-md" style="height: 23px;"></div>
                         
 
             <h1 class="style1" style="font-size:2em; margin: 6px 0;">://skills</h1>
@@ -363,16 +397,18 @@
         </div>
 
         
-    <div style="height: 60px;"></div>
+    <div class="gap-lg"></div>
 
-        <div style="width:100%;max-width:750px;margin:0 auto;padding:10px 0 0 0;border-top:2px solid #e2d2e9;">
+    <div class="section-container">
 
-            <h1 class="style1" style="font-size:2em; margin: 6px 0;">://work </h1>
+        <h1 class="style1" style="font-size:2em; margin: 6px 0;">://work </h1>
     <!-- projects -->
 
     <div class="projects">
         <a class="project-link" href="https://github.com/maggieyung/ecornell-portfolio">
-        <div class="project-card linkable">
+        <div style="position: relative;">
+            <img src="../img/dust.png" alt="Dust" style="position: absolute; right: -120px; top: 30px; height: 80px; filter: drop-shadow(0 2px 10px #fff8); opacity: 0.85; pointer-events: none; user-select: none; z-index: 2;" />
+            <div class="project-card linkable">
             <div class="project-title" style="text-align:center;"><strong>Government Confidence (WHR) ML Model</strong></div>
             <p class="project-desc">Predictive regression model using the World Happiness Report (WHR) dataset to identify key factors influencing government trust and corruption perceptions</p>
             <div class="project-meta"><span class="meta-label">Tech Stack:</span> NumPy, Pandas, Scikit-Learn, Matplotlib, Seaborn</div>
@@ -528,12 +564,7 @@
 </style>
 
 
-        <div style="width:100%;max-width:750px;margin:0 auto;padding:10px 0 0 0;border-top:2px solid #e2d2e9;">
-            
-
-
-
-            
+    <div class="section-container">
         <!-- gallery -->
 <div class="gallery-row" style="display: flex; flex-wrap: wrap; align-items: stretch; justify-content: center; width: 100vw; margin-left: 50%; transform: translateX(-50%); padding: 0; gap: 0;">
     <div class="gallery-item">
@@ -801,32 +832,26 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 </style>
-            
+    </div>
+    
+    <div class="contact-section">
+        <div class="gap-md" style="height: 30px;"></div>
 
+        <h1 class="style4" style="font-size:2em; margin: 6px 0;">://contact</h1>
+        <p style="text-align:center; font-size: 20px">Email: <a href="mailto:maggieyung677@gmail.com" class="contact-link">maggieyung677@gmail.com</a></p>
+        <p style="text-align:center; font-size: 20px">Linkedin: <a href="https://www.linkedin.com/in/maggieyung/" target="_blank" class="contact-link">/in/maggieyung/</a></p>
+        <p style="text-align:center; font-size: 20px">GitHub: <a href="https://github.com/maggieyung" target="_blank" class="contact-link">github.com/maggieyung</a></p>
+        <p style="text-align:center; font-size: 20px">ArtStation: <a href="https://maggieyung.artstation.com/" target="_blank" class="contact-link">maggieyung.artstation.com</a></p>
 
-        </div>
-        
-        <div style="width:100vw;position:relative;left:50%;transform:translateX(-50%);padding:10px 0 0 0;border-top:2px solid #e2d2e9; background: radial-gradient(circle at 50% 30%, #d5ddc1 0%, #e6e7e1 70%, #e4dede 100%);">
+        <div class="gap-md" style="height: 30px;"></div>
+        <h1 class="style3 header-dotgothic"><span style="font-family: inherit; font-size: 0.8em; color: #3b3f33;">₊ ⊹🐧 thank you for visiting 🥬୨୧ ｡ </span></h1>
 
+        <div class="gap-lg" style="height: 50px;"></div>
 
-                        <div style="height: 30px;"></div>
+        <img src="../img/mitree.jpg" height="40" style="display: block; margin: 0 auto;" draggable="false">
 
-    <h1 class="style4" style="font-size:2em; margin: 6px 0;">://contact</h1>
-    <p style="text-align:center; font-size: 20px">Email: <a href="mailto:maggieyung677@gmail.com" style="color:#475f21;text-decoration:underline;">maggieyung677@gmail.com</a></p>
-    <p style="text-align:center; font-size: 20px">Linkedin: <a href="https://www.linkedin.com/in/maggieyung/" target="_blank" style="color:#475f21;text-decoration:underline;">/in/maggieyung/</a></p>
-    <p style="text-align:center; font-size: 20px">GitHub: <a href="    https://github.com/maggieyung" target="_blank" style="color:#475f21;text-decoration:underline;">github.com/maggieyung</a></p>
-
-
-            <div style="height: 30px;"></div>
-                <h1 class="style3 header-dotgothic"><span style="font-family: inherit; font-size: 0.8em; color: #3b3f33;">₊ ⊹🐧 thank you for visiting 🥬୨୧ ｡ </span></h1>
-
-            <div style="height: 50px;"></div>
-
-                            <img src="../img/mitree.jpg" height="40" style="display: block; margin: 0 auto;" draggable="false">
-
-            <div style="height: 80px;"></div>
-
-</div>
+        <div class="gap-xl"></div>
+    </div>
             
 
 <script>
